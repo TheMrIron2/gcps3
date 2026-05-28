@@ -24,6 +24,8 @@ void GXSetClearColor(GXColor color);
 void GXClear(void);
 void GXClearVtxDesc(void);
 void GXSetVtxDesc(GXAttr attr, GXAttrType type);
+void GXLoadPosMtxImm(const float mtx[3][4], uint32_t id);
+void GXSetCurrentMtx(uint32_t id);
 void GXBeginTriangles(void);
 void GXPosition3f32(float x, float y, float z);
 void GXColor4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a);

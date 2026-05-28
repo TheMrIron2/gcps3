@@ -9,11 +9,33 @@ static void gx_warn_uninitialized(const char *call_name)
     GCPS3_LOG_WARN("gx", "%s called before GXInit", call_name);
 }
 
-static void gx_reset_draw_packet(Gcps3GXState *state)
+static void gx_reset_triangle_packet(Gcps3GXState *state)
 {
-    state->packet.primitive = GCPS3_GX_PRIMITIVE_TRIANGLES;
-    state->packet.descriptor = state->descriptor;
-    state->packet.vertex_count = 0;
+    gcps3_gx_draw_packet_reset(&state->packet, state, GCPS3_GX_PRIMITIVE_TRIANGLES);
+}
+
+static unsigned int gx_trim_incomplete_triangles(Gcps3GXDrawPacket *packet)
+{
+    unsigned int trailing_vertex_count;
+
+    trailing_vertex_count = packet->vertex_count % 3u;
+    if (trailing_vertex_count != 0u) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "triangle-list vertex count %u is not a multiple of 3; discarding %u trailing vertex/vertices",
+            packet->vertex_count,
+            trailing_vertex_count);
+        packet->vertex_count -= trailing_vertex_count;
+    }
+
+    return trailing_vertex_count;
+}
+
+static void gx_submit_draw_packet(Gcps3GXState *state)
+{
+    gcps3_gx_backend_submit_draw_packet(&state->packet);
+    state->drawing = 0;
+    gx_reset_triangle_packet(state);
 }
 
 static const char *gx_attr_name(GXAttr attr)
@@ -69,7 +91,7 @@ void GXShutdown(void)
     if (state->drawing) {
         GCPS3_LOG_WARN("gx", "GXShutdown called during an active immediate draw; discarding packet");
         state->drawing = 0;
-        gx_reset_draw_packet(state);
+        gx_reset_triangle_packet(state);
     }
 
     gcps3_gx_backend_shutdown(state);
@@ -179,6 +201,52 @@ void GXSetVtxDesc(GXAttr attr, GXAttrType type)
     GCPS3_LOG_INFO("gx", "vertex descriptor %s=%s", gx_attr_name(attr), gx_attr_type_name(type));
 }
 
+void GXLoadPosMtxImm(const float mtx[3][4], uint32_t id)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    if (id >= GCPS3_GX_MAX_POS_MATRICES) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "GXLoadPosMtxImm id=%u is out of range; max position matrices=%u",
+            (unsigned int)id,
+            (unsigned int)GCPS3_GX_MAX_POS_MATRICES);
+        return;
+    }
+
+    gcps3_gx_copy_pos_mtx(state->position_matrices[id], mtx);
+
+    if (!state->initialized) {
+        GCPS3_LOG_WARN("gx", "GXLoadPosMtxImm called before GXInit; state recorded only");
+        return;
+    }
+
+    GCPS3_LOG_INFO("gx", "loaded position matrix id=%u", (unsigned int)id);
+}
+
+void GXSetCurrentMtx(uint32_t id)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    if (id >= GCPS3_GX_MAX_POS_MATRICES) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "GXSetCurrentMtx id=%u is out of range; max position matrices=%u",
+            (unsigned int)id,
+            (unsigned int)GCPS3_GX_MAX_POS_MATRICES);
+        return;
+    }
+
+    state->current_matrix_id = id;
+
+    if (!state->initialized) {
+        GCPS3_LOG_WARN("gx", "GXSetCurrentMtx called before GXInit; state recorded only");
+        return;
+    }
+
+    GCPS3_LOG_INFO("gx", "current position matrix id=%u", (unsigned int)id);
+}
+
 /*
  * Temporary immediate-mode frontend used to validate early GX-style samples.
  * Real rendering backends should eventually consume batched, explicit draw data.
@@ -198,7 +266,7 @@ void GXBeginTriangles(void)
     }
 
     state->drawing = 1;
-    gx_reset_draw_packet(state);
+    gx_reset_triangle_packet(state);
 }
 
 void GXPosition3f32(float x, float y, float z)
@@ -265,7 +333,6 @@ void GXColor4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 void GXEnd(void)
 {
     Gcps3GXState *state = gcps3_gx_state();
-    unsigned int trailing_vertex_count;
 
     if (!state->initialized) {
         gx_warn_uninitialized("GXEnd");
@@ -277,24 +344,14 @@ void GXEnd(void)
         return;
     }
 
-    trailing_vertex_count = state->packet.vertex_count % 3u;
-    if (trailing_vertex_count != 0u) {
-        GCPS3_LOG_WARN(
-            "gx",
-            "triangle-list vertex count %u is not a multiple of 3; discarding %u trailing vertex/vertices",
-            state->packet.vertex_count,
-            trailing_vertex_count);
-        state->packet.vertex_count -= trailing_vertex_count;
-    }
+    gx_trim_incomplete_triangles(&state->packet);
 
     if (state->packet.vertex_count == 0u) {
         GCPS3_LOG_WARN("gx", "GXEnd submitted no complete triangles");
         state->drawing = 0;
-        gx_reset_draw_packet(state);
+        gx_reset_triangle_packet(state);
         return;
     }
 
-    gcps3_gx_backend_submit_draw_packet(&state->packet);
-    state->drawing = 0;
-    gx_reset_draw_packet(state);
+    gx_submit_draw_packet(state);
 }

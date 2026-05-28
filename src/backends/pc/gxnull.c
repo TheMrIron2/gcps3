@@ -24,6 +24,31 @@ static const char *attr_type_name(GXAttrType type)
     }
 }
 
+static void log_matrix(const Gcps3GXDrawPacket *packet)
+{
+    GCPS3_LOG_INFO(
+        "gxnull",
+        "matrix row0=(%.3f, %.3f, %.3f, %.3f)",
+        packet->current_matrix[0][0],
+        packet->current_matrix[0][1],
+        packet->current_matrix[0][2],
+        packet->current_matrix[0][3]);
+    GCPS3_LOG_INFO(
+        "gxnull",
+        "matrix row1=(%.3f, %.3f, %.3f, %.3f)",
+        packet->current_matrix[1][0],
+        packet->current_matrix[1][1],
+        packet->current_matrix[1][2],
+        packet->current_matrix[1][3]);
+    GCPS3_LOG_INFO(
+        "gxnull",
+        "matrix row2=(%.3f, %.3f, %.3f, %.3f)",
+        packet->current_matrix[2][0],
+        packet->current_matrix[2][1],
+        packet->current_matrix[2][2],
+        packet->current_matrix[2][3]);
+}
+
 void gcps3_gx_backend_init(const Gcps3GXState *state)
 {
     GCPS3_LOG_INFO(
@@ -92,11 +117,14 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
 
     GCPS3_LOG_INFO(
         "gxnull",
-        "draw primitive=%s vertex_count=%u desc[position=%s color0=%s]",
+        "draw primitive=%s vertex_count=%u desc[position=%s color0=%s] mtx=%u",
         primitive_name(packet->primitive),
         packet->vertex_count,
         attr_type_name(packet->descriptor.position),
-        attr_type_name(packet->descriptor.color0));
+        attr_type_name(packet->descriptor.color0),
+        (unsigned int)packet->current_matrix_id);
+
+    log_matrix(packet);
 
     for (i = 0; i < packet->vertex_count; i++) {
         const Gcps3GXVertex *vertex = &packet->vertices[i];

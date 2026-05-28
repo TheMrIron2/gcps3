@@ -43,3 +43,6 @@ target_link_libraries(gx_validation PRIVATE gcps3)
 
 add_executable(gx_vtxdesc samples/gx_vtxdesc/main.c)
 target_link_libraries(gx_vtxdesc PRIVATE gcps3)
+
+add_executable(gx_matrix samples/gx_matrix/main.c)
+target_link_libraries(gx_matrix PRIVATE gcps3)
