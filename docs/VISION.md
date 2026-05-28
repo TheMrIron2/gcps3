@@ -74,3 +74,5 @@ Long-term goals include:
 * optional SPE acceleration for audio, texture conversion, and math batches
 * per-game configuration for resolution and enhancement options
 * clear documentation for contributors
+
+Although gcps3 begins with GameCube software, the runtime should avoid assumptions that would make Wii software impossible to support later. Wii support is a possible long-term extension for software that uses GX-style rendering and conventional controller schemes. Wii U support is out of scope for the initial project.
