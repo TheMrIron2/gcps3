@@ -13,11 +13,12 @@ The repository currently contains a host-buildable C99 runtime skeleton with:
 - OS, DVD, and PAD stubs
 - a minimal GX-style frontend
 - a null PC graphics backend
+- an optional SDL2/OpenGL PC debug visualizer backend named `gxpc`
 - immediate-mode triangle packet validation
 - minimal vertex descriptor state
 - minimal position matrix state
 
-No real rendering backend, PS3 backend, RSX backend, SPE job system, texture support, TEV support, or commercial game support exists yet.
+No final rendering backend, PS3 backend, RSX backend, SPE job system, texture support, TEV support, or commercial game support exists yet.
 
 ## Objectives
 
@@ -39,3 +40,18 @@ cmake --build build
 ./build/gx_validation
 ./build/gx_vtxdesc
 ./build/gx_matrix
+```
+
+## Optional gxpc debug visualizer
+
+The default PC graphics backend is `gxnull`, which has no external dependencies and only logs GX packets.
+
+For local development, an optional `gxpc` backend can be enabled with SDL2 and OpenGL:
+
+```sh
+cmake -S . -B build-gxpc -DGCPS3_ENABLE_GXPC=ON
+cmake --build build-gxpc
+./build-gxpc/gx_triangle
+```
+
+`gxpc` is only a debug visualizer for early frontend validation. It is not the final renderer, does not replace `gxrsx`, and intentionally does not implement textures, TEV, matrix transforms, or real GameCube rendering semantics.

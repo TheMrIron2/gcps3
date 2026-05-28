@@ -165,3 +165,5 @@ Create the initial `gcps3` repository skeleton with:
 * a simple host build path
 
 Do not implement rendering yet. Do not implement PS3-specific functionality yet. Add clear TODO comments where platform-specific implementation will be needed.
+
+Before implementing larger systems such as GX, PAD, DVD, or save handling, check `docs/REFERENCES.md` for relevant prior art and constraints.
