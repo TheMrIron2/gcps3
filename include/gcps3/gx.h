@@ -7,7 +7,11 @@
 extern "C" {
 #endif
 
-/* TODO: Add the backend-neutral GX frontend once the runtime skeleton settles. */
+void GXInit(void);
+void GXShutdown(void);
+void GXSetViewport(float x, float y, float width, float height, float near_z, float far_z);
+void GXSetClearColor(GXColor color);
+void GXClear(void);
 
 #ifdef __cplusplus
 }

@@ -10,4 +10,13 @@ typedef struct GXColor {
     uint8_t a;
 } GXColor;
 
+typedef struct GXViewport {
+    float x;
+    float y;
+    float width;
+    float height;
+    float near_z;
+    float far_z;
+} GXViewport;
+
 #endif

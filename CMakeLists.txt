@@ -11,6 +11,9 @@ add_library(gcps3
     src/core/config.c
     src/core/log.c
     src/core/runtime.c
+    src/gx/gx_frontend.c
+    src/gx/gx_state.c
+    src/backends/pc/gxnull.c
     src/dvd/dvd_common.c
     src/os/os_common.c
     src/pad/pad_common.c
@@ -28,3 +31,6 @@ target_compile_options(gcps3
 
 add_executable(hello_runtime samples/hello_runtime/main.c)
 target_link_libraries(hello_runtime PRIVATE gcps3)
+
+add_executable(gx_clear samples/gx_clear/main.c)
+target_link_libraries(gx_clear PRIVATE gcps3)
