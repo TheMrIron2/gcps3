@@ -44,6 +44,7 @@ cmake --build build
 ./build/gx_vtxdesc
 ./build/gx_matrix
 ./build/gx_textured_triangle
+./build/gx_textured_cube
 ```
 
 ## Optional gxpc debug visualizer
