@@ -1,6 +1,8 @@
 # gcps3
 
-`gcps3` is an experimental GameCube/Wii-to-PlayStation 3 portability runtime.
+<img width="80%" alt="gcps3-banner" src="https://github.com/user-attachments/assets/2ae8f269-0897-4b13-89d8-2effb7cb09fb" />
+
+`gcps3` is an experimental GameCube / Wii-to-PlayStation 3 portability runtime.
 
 The project is not an emulator and is not a Dolphin port. Its goal is to provide GameCube/Wii-style runtime APIs that can be implemented on native host and PS3 backends, allowing decompiled source ports and sample programs to be adapted incrementally.
 
