@@ -46,6 +46,8 @@ cmake --build build
 
 ## Optional gxpc debug visualizer
 
+See [docs/BACKENDS.md](docs/BACKENDS.md) for the backend overview.
+
 The default PC graphics backend is `gxnull`, which has no external dependencies and only logs GX packets.
 
 For local development, an optional `gxpc` backend can be enabled with SDL2 and OpenGL:
@@ -56,4 +58,4 @@ cmake --build build-gxpc
 ./build-gxpc/gx_triangle
 ```
 
-`gxpc` is only a debug visualizer for early frontend validation. It is not the final renderer, does not replace `gxrsx`, and intentionally does not implement textures, TEV, matrix transforms, or real GameCube rendering semantics.
+`gxpc` is only a debug visualizer for early frontend validation. It is not the final renderer, does not replace `gxrsx`, and intentionally does not implement textures, TEV, or real GameCube rendering semantics. It currently applies captured position matrices only as a visual validation aid.
