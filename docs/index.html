@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>gcps3 — GameCube-style portability runtime for PS3</title>
+
+  <meta
+    name="description"
+    content="gcps3 is an experimental GameCube-to-PlayStation 3 portability runtime for source-level ports, homebrew tooling, and backend research."
+  />
+  <meta name="theme-color" content="#32006b" />
+
+  <meta property="og:title" content="gcps3" />
+  <meta
+    property="og:description"
+    content="A mission-driven GameCube-style portability runtime for PlayStation 3."
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://github.com/user-attachments/assets/2ae8f269-0897-4b13-89d8-2effb7cb09fb" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header class="site-header">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <nav class="nav" aria-label="Primary navigation">
+      <a class="wordmark" href="#top" aria-label="gcps3 home">gcps3</a>
+
+      <div class="nav-links">
+        <a href="#mission">Mission</a>
+        <a href="#approach">Approach</a>
+        <a href="#systems">Systems</a>
+        <a href="#contribute">Contribute</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section id="top" class="hero section-pad">
+      <div class="hero-glow" aria-hidden="true"></div>
+
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">GameCube spirit. PS3 hardware.</p>
+
+          <h1>Portable GameCube-style software for PlayStation 3.</h1>
+
+          <p class="lede">
+            gcps3 is a runtime project for bringing GameCube-style source ports,
+            samples, and systems to native platforms, with PlayStation 3 as the
+            defining target.
+          </p>
+
+          <div class="cta-row">
+            <a class="button button-primary" href="https://github.com/TheMrIron2/gcps3">
+              View on GitHub
+            </a>
+            <a class="button button-secondary" href="VISION.md">
+              Read the vision
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-card" aria-label="gcps3 banner">
+          <img
+            src="https://github.com/user-attachments/assets/2ae8f269-0897-4b13-89d8-2effb7cb09fb"
+            alt="gcps3 project banner"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section id="mission" class="section-pad">
+      <div class="container two-column">
+        <div>
+          <p class="eyebrow">Mission</p>
+          <h2>Make GameCube software realistic to port, play and enhance.</h2>
+        </div>
+
+        <div class="body-copy">
+          <p>
+            gcps3 exists to reduce the distance between GameCube decompilation projects
+            and PlayStation 3. The project is not trying to emulate a
+            console, but building the intermediary layer a source port needs in
+            order to stand on its own.
+          </p>
+
+          <p>
+            The goal is to provide familiar GameCube-style APIs, map them to
+            native services, validate behaviour on PC, and turn the PS3 into a serious
+            target for 6th generation ports. These ports will have the opportunity
+            to run at high resolutions and bring visual enhancements to these games.
+          </p>
+
+          <p>
+            Along the way, gcps3 should strengthen the PS3 homebrew ecosystem itself:
+            clearer examples, better documentation, and reusable knowledge that serves
+            and tests each area of tools.
+            It's a thorough stress test of PSL1GHT and the toolchain.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="approach" class="section-pad section-contrast">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Approach</p>
+          <h2>Source-level portability, not emulation.</h2>
+          <p>
+            gcps3 follows a compatibility-layer model - keep the public surface familiar
+            to GameCube software, then implement that surface through native layers.
+          </p>
+        </div>
+
+        <div class="pipeline" aria-label="Runtime architecture">
+          <div class="pipeline-step">
+            <span class="step-label">01</span>
+            <h3>GameCube-style source</h3>
+            <p>
+              Decompiled projects, samples, and homebrew programs written
+              with familiar OS, PAD, DVD, and GX concepts.
+            </p>
+          </div>
+
+          <div class="pipeline-arrow" aria-hidden="true">→</div>
+
+          <div class="pipeline-step">
+            <span class="step-label">02</span>
+            <h3>gcps3 runtime</h3>
+            <p>
+              Compatibility headers, runtime systems, and clear interfaces
+              between frontend code and platform implementation.
+            </p>
+          </div>
+
+          <div class="pipeline-arrow" aria-hidden="true">→</div>
+
+          <div class="pipeline-step">
+            <span class="step-label">03</span>
+            <h3>Native targets</h3>
+            <p>
+              PC backends for validation and iteration; PlayStation 3 backends for the
+              real hardware target; future targets where the model makes sense.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="systems" class="section-pad">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Systems</p>
+          <h2>The runtime layer a port can build on.</h2>
+          <p>
+            gcps3 is organised around the platform systems that source ports need:
+            startup, logging, time, files, input, graphics, and eventually audio and
+            suitable PS3 acceleration paths.
+          </p>
+        </div>
+
+        <div class="card-grid">
+          <article class="card">
+            <h3>Runtime core</h3>
+            <p>
+              A small foundation for startup, shutdown, configuration, logging,
+              assertions, error reporting, and predictable sequencing.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Platform APIs</h3>
+            <p>
+              GameCube-style OS, PAD, and DVD/filesystem layers that let source code
+              express intent without binding directly to one host platform.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>GX frontend</h3>
+            <p>
+              A graphics frontend that captures GameCube-inspired rendering state while
+              keeping renderer implementation details behind explicit backend boundaries.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>PS3 backends</h3>
+            <p>
+              A path toward native PS3 support through PSL1GHT, controller APIs,
+              filesystem access, RSX rendering, and SPE-friendly jobs.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad section-contrast">
+      <div class="container two-column">
+        <div>
+          <p class="eyebrow">Renderer direction</p>
+          <h2>From a GX frontend to an RSX backend.</h2>
+        </div>
+
+        <div class="body-copy">
+          <p>
+            gcps3 treats graphics as a translation problem. The
+            GX frontend should describe intent and state. Backends should decide
+            how that state is interpreted.
+          </p>
+
+          <p>
+            gxnull provides a dependency-free correctness path. gxpc provides a fast
+            visual feedback loop. gxrsx is the long-term PS3 renderer backend: the place
+            where GX state becomes native RSX work.
+          </p>
+
+          <p>
+            The goal is not to copy a desktop renderer onto PS3. The goal is to respect
+            the hardware, learn from examples, and shape a renderer tailored to the console.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap" class="section-pad">
+      <div class="container two-column">
+        <div>
+          <p class="eyebrow">Principles</p>
+          <h2>The project should be ambitious, but not vague.</h2>
+        </div>
+
+        <ul class="roadmap-list">
+          <li>Prefer source-level portability over binary compatibility.</li>
+          <li>Keep public APIs small, understandable, and GameCube-oriented.</li>
+          <li>Keep frontend runtime code independent from PC and PS3 backend details.</li>
+          <li>Use PC validation to improve efficiency of PS3 development.</li>
+          <li>Learn from Aurora-style compatibility layers while keeping PS3 constraints central.</li>
+          <li>Choose correctness, debuggability, and clear logging before optimisation.</li>
+          <li>Use SPEs where the hardware makes sense: audio, ADPCM, texture conversion, swizzling, matrices, and animation batches.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section-pad section-contrast">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Long-term vision</p>
+          <h2>A practical bridge between decompilation work and PS3 homebrew.</h2>
+          <p>
+            A mature gcps3 should make GameCube source ports less dependent on
+            particular platform work. It should offer a useful subset of GameCube
+            runtime behaviour, reliable native PS3 paths, and clear documentation.
+          </p>
+        </div>
+
+        <div class="card-grid">
+          <article class="card">
+            <h3>Selected ports</h3>
+            <p>
+              Make desired GameCube decompilation projects more realistic to
+              adapt to PS3 without reinventing the platform layer each time.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Useful GX subset</h3>
+            <p>
+              Create a practical implementation of GX rendering that is 
+              suited to the PS3 hardware.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>PS3-native knowledge</h3>
+            <p>
+              Form lessons about RSX, PSL1GHT, input, filesystem, audio, memory, and
+              performance in reusable examples and documentation.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Future flexibility</h3>
+            <p>
+              Keep the runtime GameCube-first while avoiding assumptions that would make
+              suitable Wii-style software impossible to explore later.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="contribute" class="section-pad">
+      <div class="container contribute-panel">
+        <div>
+          <p class="eyebrow">Contribute</p>
+          <h2>Help create the next generation of ports.</h2>
+          <p>
+            gcps3 needs contributors who care about clean interfaces, graphics
+            translation, PS3 hardware, decompilation projects, runtime design,
+            documentation, and small examples that prove larger ideas.
+          </p>
+        </div>
+
+        <div class="terminal" aria-label="Host build commands">
+          <div class="terminal-bar" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <pre><code>cmake -S . -B build
+cmake --build build
+./build/hello_runtime
+./build/gx_clear
+./build/gx_triangle
+./build/gx_validation
+
+cmake -S . -B build-gxpc -DGCPS3_ENABLE_GXPC=ON
+cmake --build build-gxpc
+./build-gxpc/gx_triangle</code></pre>
+        </div>
+
+        <div class="cta-row contribute-actions">
+          <a class="button button-primary" href="https://github.com/TheMrIron2/gcps3">
+            Open the repository
+          </a>
+          <a class="button button-secondary" href="ARCHITECTURE.md">
+            Architecture notes
+          </a>
+          <a class="button button-secondary" href="REFERENCES.md">
+            References
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>gcps3</span>
+      <span>GameCube-style portability runtime for PlayStation 3.</span>
+    </div>
+  </footer>
+</body>
+</html>
