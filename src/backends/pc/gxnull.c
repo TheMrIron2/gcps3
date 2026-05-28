@@ -2,6 +2,16 @@
 
 #include "gcps3/log.h"
 
+static const char *primitive_name(Gcps3GXPrimitive primitive)
+{
+    switch (primitive) {
+    case GCPS3_GX_PRIMITIVE_TRIANGLES:
+        return "triangles";
+    default:
+        return "unknown";
+    }
+}
+
 void gcps3_gx_backend_init(const Gcps3GXState *state)
 {
     GCPS3_LOG_INFO(
@@ -62,4 +72,30 @@ void gcps3_gx_backend_clear(const Gcps3GXState *state)
         state->viewport.y,
         state->viewport.width,
         state->viewport.height);
+}
+
+void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
+{
+    unsigned int i;
+
+    GCPS3_LOG_INFO(
+        "gxnull",
+        "draw primitive=%s vertex_count=%u",
+        primitive_name(packet->primitive),
+        packet->vertex_count);
+
+    for (i = 0; i < packet->vertex_count; i++) {
+        const Gcps3GXVertex *vertex = &packet->vertices[i];
+        GCPS3_LOG_INFO(
+            "gxnull",
+            "vertex[%u] position=(%.3f, %.3f, %.3f) color=(%u,%u,%u,%u)",
+            i,
+            vertex->x,
+            vertex->y,
+            vertex->z,
+            vertex->color.r,
+            vertex->color.g,
+            vertex->color.b,
+            vertex->color.a);
+    }
 }

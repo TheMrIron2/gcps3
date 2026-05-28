@@ -34,3 +34,6 @@ target_link_libraries(hello_runtime PRIVATE gcps3)
 
 add_executable(gx_clear samples/gx_clear/main.c)
 target_link_libraries(gx_clear PRIVATE gcps3)
+
+add_executable(gx_triangle samples/gx_triangle/main.c)
+target_link_libraries(gx_triangle PRIVATE gcps3)
