@@ -25,6 +25,9 @@ void gcps3_gx_state_reset(void)
     s_gx_state.viewport.height = 480.0f;
     s_gx_state.viewport.near_z = 0.0f;
     s_gx_state.viewport.far_z = 1.0f;
+    s_gx_state.descriptor.position = GX_ATTR_DIRECT;
+    s_gx_state.descriptor.color0 = GX_ATTR_DIRECT;
     s_gx_state.packet.primitive = GCPS3_GX_PRIMITIVE_TRIANGLES;
+    s_gx_state.packet.descriptor = s_gx_state.descriptor;
     s_gx_state.packet.vertex_count = 0;
 }

@@ -1,9 +1,18 @@
 #ifndef GCPS3_GX_INTERNAL_H
 #define GCPS3_GX_INTERNAL_H
 
-#include "gcps3/gx_types.h"
+#include "gcps3/gx.h"
 
+/*
+ * Temporary immediate-mode packet capacity for early runtime validation.
+ * This is deliberately small and is not the final high-performance renderer path.
+ */
 #define GCPS3_GX_MAX_PACKET_VERTICES 64
+
+typedef struct Gcps3GXVtxDesc {
+    GXAttrType position;
+    GXAttrType color0;
+} Gcps3GXVtxDesc;
 
 typedef enum Gcps3GXPrimitive {
     GCPS3_GX_PRIMITIVE_TRIANGLES = 0
@@ -18,6 +27,7 @@ typedef struct Gcps3GXVertex {
 
 typedef struct Gcps3GXDrawPacket {
     Gcps3GXPrimitive primitive;
+    Gcps3GXVtxDesc descriptor;
     unsigned int vertex_count;
     Gcps3GXVertex vertices[GCPS3_GX_MAX_PACKET_VERTICES];
 } Gcps3GXDrawPacket;
@@ -28,6 +38,7 @@ typedef struct Gcps3GXState {
     GXColor clear_color;
     GXColor current_color;
     GXViewport viewport;
+    Gcps3GXVtxDesc descriptor;
     Gcps3GXDrawPacket packet;
 } Gcps3GXState;
 

@@ -12,6 +12,18 @@ static const char *primitive_name(Gcps3GXPrimitive primitive)
     }
 }
 
+static const char *attr_type_name(GXAttrType type)
+{
+    switch (type) {
+    case GX_ATTR_NONE:
+        return "none";
+    case GX_ATTR_DIRECT:
+        return "direct";
+    default:
+        return "unknown";
+    }
+}
+
 void gcps3_gx_backend_init(const Gcps3GXState *state)
 {
     GCPS3_LOG_INFO(
@@ -80,9 +92,11 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
 
     GCPS3_LOG_INFO(
         "gxnull",
-        "draw primitive=%s vertex_count=%u",
+        "draw primitive=%s vertex_count=%u desc[position=%s color0=%s]",
         primitive_name(packet->primitive),
-        packet->vertex_count);
+        packet->vertex_count,
+        attr_type_name(packet->descriptor.position),
+        attr_type_name(packet->descriptor.color0));
 
     for (i = 0; i < packet->vertex_count; i++) {
         const Gcps3GXVertex *vertex = &packet->vertices[i];

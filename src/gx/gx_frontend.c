@@ -9,6 +9,37 @@ static void gx_warn_uninitialized(const char *call_name)
     GCPS3_LOG_WARN("gx", "%s called before GXInit", call_name);
 }
 
+static void gx_reset_draw_packet(Gcps3GXState *state)
+{
+    state->packet.primitive = GCPS3_GX_PRIMITIVE_TRIANGLES;
+    state->packet.descriptor = state->descriptor;
+    state->packet.vertex_count = 0;
+}
+
+static const char *gx_attr_name(GXAttr attr)
+{
+    switch (attr) {
+    case GX_ATTR_POSITION:
+        return "position";
+    case GX_ATTR_COLOR0:
+        return "color0";
+    default:
+        return "unknown";
+    }
+}
+
+static const char *gx_attr_type_name(GXAttrType type)
+{
+    switch (type) {
+    case GX_ATTR_NONE:
+        return "none";
+    case GX_ATTR_DIRECT:
+        return "direct";
+    default:
+        return "unknown";
+    }
+}
+
 void GXInit(void)
 {
     Gcps3GXState *state = gcps3_gx_state();
@@ -33,6 +64,12 @@ void GXShutdown(void)
     if (!state->initialized) {
         GCPS3_LOG_WARN("gx", "GXShutdown called before GXInit");
         return;
+    }
+
+    if (state->drawing) {
+        GCPS3_LOG_WARN("gx", "GXShutdown called during an active immediate draw; discarding packet");
+        state->drawing = 0;
+        gx_reset_draw_packet(state);
     }
 
     gcps3_gx_backend_shutdown(state);
@@ -85,6 +122,67 @@ void GXClear(void)
     gcps3_gx_backend_clear(state);
 }
 
+void GXClearVtxDesc(void)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    state->descriptor.position = GX_ATTR_NONE;
+    state->descriptor.color0 = GX_ATTR_NONE;
+
+    if (!state->initialized) {
+        GCPS3_LOG_WARN("gx", "GXClearVtxDesc called before GXInit; state recorded only");
+        return;
+    }
+
+    if (state->drawing) {
+        GCPS3_LOG_WARN("gx", "GXClearVtxDesc called during an active immediate draw; descriptor changes apply to the next packet");
+        return;
+    }
+
+    GCPS3_LOG_INFO("gx", "vertex descriptors cleared");
+}
+
+void GXSetVtxDesc(GXAttr attr, GXAttrType type)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+    GXAttrType *target = 0;
+
+    if (type != GX_ATTR_NONE && type != GX_ATTR_DIRECT) {
+        GCPS3_LOG_WARN("gx", "GXSetVtxDesc attr=%s has unsupported type=%d", gx_attr_name(attr), (int)type);
+        return;
+    }
+
+    switch (attr) {
+    case GX_ATTR_POSITION:
+        target = &state->descriptor.position;
+        break;
+    case GX_ATTR_COLOR0:
+        target = &state->descriptor.color0;
+        break;
+    default:
+        GCPS3_LOG_WARN("gx", "GXSetVtxDesc called with unsupported attr=%d", (int)attr);
+        return;
+    }
+
+    *target = type;
+
+    if (!state->initialized) {
+        GCPS3_LOG_WARN("gx", "GXSetVtxDesc called before GXInit; state recorded only");
+        return;
+    }
+
+    if (state->drawing) {
+        GCPS3_LOG_WARN("gx", "GXSetVtxDesc called during an active immediate draw; descriptor changes apply to the next packet");
+        return;
+    }
+
+    GCPS3_LOG_INFO("gx", "vertex descriptor %s=%s", gx_attr_name(attr), gx_attr_type_name(type));
+}
+
+/*
+ * Temporary immediate-mode frontend used to validate early GX-style samples.
+ * Real rendering backends should eventually consume batched, explicit draw data.
+ */
 void GXBeginTriangles(void)
 {
     Gcps3GXState *state = gcps3_gx_state();
@@ -95,12 +193,12 @@ void GXBeginTriangles(void)
     }
 
     if (state->drawing) {
-        GCPS3_LOG_WARN("gx", "GXBeginTriangles called while a draw is already active; restarting packet");
+        GCPS3_LOG_WARN("gx", "GXBeginTriangles called while a draw is already active; nested begin rejected");
+        return;
     }
 
     state->drawing = 1;
-    state->packet.primitive = GCPS3_GX_PRIMITIVE_TRIANGLES;
-    state->packet.vertex_count = 0;
+    gx_reset_draw_packet(state);
 }
 
 void GXPosition3f32(float x, float y, float z)
@@ -118,8 +216,16 @@ void GXPosition3f32(float x, float y, float z)
         return;
     }
 
+    if (state->packet.descriptor.position != GX_ATTR_DIRECT) {
+        GCPS3_LOG_WARN("gx", "GXPosition3f32 ignored because position is not enabled as direct");
+        return;
+    }
+
     if (state->packet.vertex_count >= GCPS3_GX_MAX_PACKET_VERTICES) {
-        GCPS3_LOG_WARN("gx", "GX draw packet vertex capacity reached; dropping vertex");
+        GCPS3_LOG_WARN(
+            "gx",
+            "GX immediate packet capacity %u reached; dropping vertex",
+            (unsigned int)GCPS3_GX_MAX_PACKET_VERTICES);
         return;
     }
 
@@ -135,19 +241,25 @@ void GXColor4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
     Gcps3GXState *state = gcps3_gx_state();
 
-    state->current_color.r = r;
-    state->current_color.g = g;
-    state->current_color.b = b;
-    state->current_color.a = a;
-
     if (!state->initialized) {
         gx_warn_uninitialized("GXColor4u8");
         return;
     }
 
     if (!state->drawing) {
-        GCPS3_LOG_WARN("gx", "GXColor4u8 called outside GXBeginTriangles/GXEnd; current color recorded");
+        GCPS3_LOG_WARN("gx", "GXColor4u8 called outside GXBeginTriangles/GXEnd");
+        return;
     }
+
+    if (state->packet.descriptor.color0 != GX_ATTR_DIRECT) {
+        GCPS3_LOG_WARN("gx", "GXColor4u8 ignored because color0 is not enabled as direct");
+        return;
+    }
+
+    state->current_color.r = r;
+    state->current_color.g = g;
+    state->current_color.b = b;
+    state->current_color.a = a;
 }
 
 void GXEnd(void)
@@ -167,16 +279,22 @@ void GXEnd(void)
 
     trailing_vertex_count = state->packet.vertex_count % 3u;
     if (trailing_vertex_count != 0u) {
-        GCPS3_LOG_WARN("gx", "dropping %u incomplete triangle-list vertex/vertices", trailing_vertex_count);
+        GCPS3_LOG_WARN(
+            "gx",
+            "triangle-list vertex count %u is not a multiple of 3; discarding %u trailing vertex/vertices",
+            state->packet.vertex_count,
+            trailing_vertex_count);
         state->packet.vertex_count -= trailing_vertex_count;
     }
 
     if (state->packet.vertex_count == 0u) {
         GCPS3_LOG_WARN("gx", "GXEnd submitted no complete triangles");
         state->drawing = 0;
+        gx_reset_draw_packet(state);
         return;
     }
 
     gcps3_gx_backend_submit_draw_packet(&state->packet);
     state->drawing = 0;
+    gx_reset_draw_packet(state);
 }

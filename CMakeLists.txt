@@ -37,3 +37,9 @@ target_link_libraries(gx_clear PRIVATE gcps3)
 
 add_executable(gx_triangle samples/gx_triangle/main.c)
 target_link_libraries(gx_triangle PRIVATE gcps3)
+
+add_executable(gx_validation samples/gx_validation/main.c)
+target_link_libraries(gx_validation PRIVATE gcps3)
+
+add_executable(gx_vtxdesc samples/gx_vtxdesc/main.c)
+target_link_libraries(gx_vtxdesc PRIVATE gcps3)
