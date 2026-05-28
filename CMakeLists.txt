@@ -6,6 +6,15 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+option(GCPS3_ENABLE_GXPC "Enable the SDL2/OpenGL gxpc debug visualizer backend" OFF)
+
+set(GCPS3_GX_BACKEND_SOURCE src/backends/pc/gxnull.c)
+if(GCPS3_ENABLE_GXPC)
+    find_package(SDL2 REQUIRED)
+    find_package(OpenGL REQUIRED)
+    set(GCPS3_GX_BACKEND_SOURCE src/backends/pc/gxpc.c)
+endif()
+
 add_library(gcps3
     src/core/backend.c
     src/core/config.c
@@ -13,7 +22,7 @@ add_library(gcps3
     src/core/runtime.c
     src/gx/gx_frontend.c
     src/gx/gx_state.c
-    src/backends/pc/gxnull.c
+    ${GCPS3_GX_BACKEND_SOURCE}
     src/dvd/dvd_common.c
     src/os/os_common.c
     src/pad/pad_common.c
@@ -28,6 +37,19 @@ target_compile_options(gcps3
     PRIVATE
         $<$<C_COMPILER_ID:AppleClang,Clang,GNU>:-Wall -Wextra -Wpedantic>
 )
+
+if(GCPS3_ENABLE_GXPC)
+    target_compile_definitions(gcps3 PRIVATE GCPS3_ENABLE_GXPC=1)
+
+    if(TARGET SDL2::SDL2)
+        target_link_libraries(gcps3 PRIVATE SDL2::SDL2)
+    else()
+        target_include_directories(gcps3 PRIVATE ${SDL2_INCLUDE_DIRS})
+        target_link_libraries(gcps3 PRIVATE ${SDL2_LIBRARIES})
+    endif()
+
+    target_link_libraries(gcps3 PRIVATE OpenGL::GL)
+endif()
 
 add_executable(hello_runtime samples/hello_runtime/main.c)
 target_link_libraries(hello_runtime PRIVATE gcps3)
