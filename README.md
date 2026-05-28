@@ -1,24 +1,41 @@
 # gcps3
 
-An experimental GameCube-to-PS3 portability project. The goal of gcps3 is to provide devs with tools that assist in porting GameCube and Wii software to PS3.
+`gcps3` is an experimental GameCube/Wii-to-PlayStation 3 portability runtime.
 
-Major changes need to be made to PSL1GHT and the PS3 toolchain before a serious project is possible. However, the direction of the initial groundwork is to create a runtime layer that lets GameCube and Wii source code and decomp projects build against native host and PS3 backends.
+The project is not an emulator and is not a Dolphin port. Its goal is to provide GameCube/Wii-style runtime APIs that can be implemented on native host and PS3 backends, allowing decompiled source ports and sample programs to be adapted incrementally.
+
+## Current status
+
+The repository currently contains a host-buildable C99 runtime skeleton with:
+
+- core runtime init/shutdown
+- logging and configuration
+- OS, DVD, and PAD stubs
+- a minimal GX-style frontend
+- a null PC graphics backend
+- immediate-mode triangle packet validation
+- minimal vertex descriptor state
+- minimal position matrix state
+
+No real rendering backend, PS3 backend, RSX backend, SPE job system, texture support, TEV support, or commercial game support exists yet.
 
 ## Objectives
 
-- Provide GameCube-like APIs for PS3.
-- Hardware-accelerated RSX graphics backend, `gsrsx`.
-- Accelerate common tasks such as audio and suitable bulk workloads with the SPEs.
-- Make decompiled GameCube / Wii games portable for PS3.
-
-gcps3 should also serve as valuable data for improving PSL1GHT and other PS3 tooling in practical settings.
+- Provide GameCube/Wii-style APIs for portable source-level ports.
+- Keep frontend runtime code backend-neutral.
+- Build a PS3 RSX renderer backend named `gxrsx`.
+- Use PC backends for fast validation before PS3 hardware work.
+- Use SPEs later for suitable bulk workloads such as audio, ADPCM decode, texture conversion, and matrix/animation batches.
+- Feed practical findings back into PSL1GHT and PS3 homebrew tooling.
 
 ## Host build
-
-The initial skeleton builds a host-only runtime library and the `hello_runtime` sample.
 
 ```sh
 cmake -S . -B build
 cmake --build build
 ./build/hello_runtime
-```
+./build/gx_clear
+./build/gx_triangle
+./build/gx_validation
+./build/gx_vtxdesc
+./build/gx_matrix
