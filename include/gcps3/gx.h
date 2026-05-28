@@ -9,7 +9,8 @@ extern "C" {
 
 typedef enum GXAttr {
     GX_ATTR_POSITION = 0,
-    GX_ATTR_COLOR0 = 1
+    GX_ATTR_COLOR0 = 1,
+    GX_ATTR_TEX0 = 2
 } GXAttr;
 
 typedef enum GXAttrType {
@@ -24,11 +25,14 @@ void GXSetClearColor(GXColor color);
 void GXClear(void);
 void GXClearVtxDesc(void);
 void GXSetVtxDesc(GXAttr attr, GXAttrType type);
+void GXInitTexObj(GXTexObj *obj, const void *rgba8_pixels, uint32_t width, uint32_t height);
+void GXLoadTexObj(const GXTexObj *obj);
 void GXLoadPosMtxImm(const float mtx[3][4], uint32_t id);
 void GXSetCurrentMtx(uint32_t id);
 void GXBeginTriangles(void);
 void GXPosition3f32(float x, float y, float z);
 void GXColor4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void GXTexCoord2f32(float s, float t);
 void GXEnd(void);
 
 #ifdef __cplusplus

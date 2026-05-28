@@ -45,6 +45,8 @@ static const char *gx_attr_name(GXAttr attr)
         return "position";
     case GX_ATTR_COLOR0:
         return "color0";
+    case GX_ATTR_TEX0:
+        return "tex0";
     default:
         return "unknown";
     }
@@ -150,6 +152,7 @@ void GXClearVtxDesc(void)
 
     state->descriptor.position = GX_ATTR_NONE;
     state->descriptor.color0 = GX_ATTR_NONE;
+    state->descriptor.tex0 = GX_ATTR_NONE;
 
     if (!state->initialized) {
         GCPS3_LOG_WARN("gx", "GXClearVtxDesc called before GXInit; state recorded only");
@@ -181,6 +184,9 @@ void GXSetVtxDesc(GXAttr attr, GXAttrType type)
     case GX_ATTR_COLOR0:
         target = &state->descriptor.color0;
         break;
+    case GX_ATTR_TEX0:
+        target = &state->descriptor.tex0;
+        break;
     default:
         GCPS3_LOG_WARN("gx", "GXSetVtxDesc called with unsupported attr=%d", (int)attr);
         return;
@@ -199,6 +205,39 @@ void GXSetVtxDesc(GXAttr attr, GXAttrType type)
     }
 
     GCPS3_LOG_INFO("gx", "vertex descriptor %s=%s", gx_attr_name(attr), gx_attr_type_name(type));
+}
+
+void GXInitTexObj(GXTexObj *obj, const void *rgba8_pixels, uint32_t width, uint32_t height)
+{
+    if (!obj) {
+        GCPS3_LOG_WARN("gx", "GXInitTexObj called with null texture object");
+        return;
+    }
+
+    obj->rgba8_pixels = rgba8_pixels;
+    obj->width = width;
+    obj->height = height;
+}
+
+void GXLoadTexObj(const GXTexObj *obj)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    if (!state->initialized) {
+        gx_warn_uninitialized("GXLoadTexObj");
+        return;
+    }
+
+    if (!obj || !obj->rgba8_pixels || obj->width == 0u || obj->height == 0u) {
+        GCPS3_LOG_WARN("gx", "GXLoadTexObj called with invalid RGBA8 texture object");
+        return;
+    }
+
+    state->texture.bound = 1;
+    state->texture.rgba8_pixels = obj->rgba8_pixels;
+    state->texture.width = obj->width;
+    state->texture.height = obj->height;
+    GCPS3_LOG_INFO("gx", "loaded RGBA8 texture %ux%u", (unsigned int)obj->width, (unsigned int)obj->height);
 }
 
 void GXLoadPosMtxImm(const float mtx[3][4], uint32_t id)
@@ -302,6 +341,8 @@ void GXPosition3f32(float x, float y, float z)
     vertex->y = y;
     vertex->z = z;
     vertex->color = state->current_color;
+    vertex->s = state->current_s;
+    vertex->t = state->current_t;
     state->packet.vertex_count++;
 }
 
@@ -328,6 +369,29 @@ void GXColor4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
     state->current_color.g = g;
     state->current_color.b = b;
     state->current_color.a = a;
+}
+
+void GXTexCoord2f32(float s, float t)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    if (!state->initialized) {
+        gx_warn_uninitialized("GXTexCoord2f32");
+        return;
+    }
+
+    if (!state->drawing) {
+        GCPS3_LOG_WARN("gx", "GXTexCoord2f32 called outside GXBeginTriangles/GXEnd");
+        return;
+    }
+
+    if (state->packet.descriptor.tex0 != GX_ATTR_DIRECT) {
+        GCPS3_LOG_WARN("gx", "GXTexCoord2f32 ignored because tex0 is not enabled as direct");
+        return;
+    }
+
+    state->current_s = s;
+    state->current_t = t;
 }
 
 void GXEnd(void)

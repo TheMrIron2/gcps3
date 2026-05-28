@@ -7,8 +7,8 @@
 
 /*
  * gxpc is a development-only SDL2/OpenGL debug visualizer for early GX frontend
- * validation. It is not the final renderer and deliberately ignores textures,
- * TEV, and platform-specific rendering paths.
+ * validation. It is not the final renderer; its RGBA8 texture upload path is
+ * only for inspecting early immediate-mode samples.
  */
 #define GCPS3_GXPC_PRESENT_MS 1200u
 
@@ -16,6 +16,7 @@ static SDL_Window *s_window;
 static SDL_GLContext s_gl_context;
 static GXColor s_clear_color;
 static int s_sdl_initialized;
+static GLuint s_texture;
 
 static float color_channel(uint8_t channel)
 {
@@ -44,6 +45,45 @@ static void apply_clear_color(GXColor color)
         color_channel(color.a));
 }
 
+static int should_use_texture(const Gcps3GXDrawPacket *packet)
+{
+    return packet->descriptor.tex0 == GX_ATTR_DIRECT && packet->texture.bound && packet->texture.rgba8_pixels;
+}
+
+static int upload_texture_for_draw(const Gcps3GXDrawPacket *packet)
+{
+    if (!should_use_texture(packet)) {
+        return 0;
+    }
+
+    if (s_texture == 0u) {
+        glGenTextures(1, &s_texture);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, s_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        (GLsizei)packet->texture.width,
+        (GLsizei)packet->texture.height,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        packet->texture.rgba8_pixels);
+    return 1;
+}
+
+/*
+ * Apply the captured 3x4 position matrix as a local visualizer transform.
+ * This intentionally does not mutate packet vertices and should not be treated
+ * as the final GX transform pipeline.
+ */
 static void transform_position(const Gcps3GXDrawPacket *packet, const Gcps3GXVertex *vertex, float *x, float *y, float *z)
 {
     const float(*mtx)[4] = packet->current_matrix;
@@ -113,6 +153,11 @@ void gcps3_gx_backend_shutdown(const Gcps3GXState *state)
     (void)state;
 
     if (s_gl_context) {
+        if (s_texture != 0u) {
+            glDeleteTextures(1, &s_texture);
+            s_texture = 0u;
+        }
+
         SDL_GL_DeleteContext(s_gl_context);
         s_gl_context = 0;
     }
@@ -165,6 +210,7 @@ void gcps3_gx_backend_clear(const Gcps3GXState *state)
 void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
 {
     unsigned int i;
+    int use_texture;
 
     if (!s_window || packet->primitive != GCPS3_GX_PRIMITIVE_TRIANGLES) {
         return;
@@ -174,7 +220,20 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
 
     apply_clear_color(s_clear_color);
     glClear(GL_COLOR_BUFFER_BIT);
+    use_texture = upload_texture_for_draw(packet);
 
+    if (use_texture) {
+        glEnable(GL_TEXTURE_2D);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    } else {
+        glDisable(GL_TEXTURE_2D);
+    }
+
+    /*
+     * Temporary visualizer path: vertices are treated as already suitable for
+     * the current OpenGL debug coordinate convention after matrix application.
+     * Do not treat this as final GX projection or viewport behaviour.
+     */
     glBegin(GL_TRIANGLES);
     for (i = 0; i < packet->vertex_count; i++) {
         const Gcps3GXVertex *vertex = &packet->vertices[i];
@@ -184,9 +243,13 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
 
         transform_position(packet, vertex, &x, &y, &z);
         glColor4ub(vertex->color.r, vertex->color.g, vertex->color.b, vertex->color.a);
+        if (use_texture) {
+            glTexCoord2f(vertex->s, vertex->t);
+        }
         glVertex3f(x, y, z);
     }
     glEnd();
+    glDisable(GL_TEXTURE_2D);
 
     SDL_GL_SwapWindow(s_window);
     pump_events();

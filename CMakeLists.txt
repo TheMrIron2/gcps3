@@ -72,3 +72,6 @@ target_link_libraries(gx_vtxdesc PRIVATE gcps3)
 
 add_executable(gx_matrix samples/gx_matrix/main.c)
 target_link_libraries(gx_matrix PRIVATE gcps3)
+
+add_executable(gx_textured_triangle samples/gx_textured_triangle/main.c)
+target_link_libraries(gx_textured_triangle PRIVATE gcps3)

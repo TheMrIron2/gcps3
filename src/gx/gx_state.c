@@ -38,6 +38,7 @@ void gcps3_gx_draw_packet_reset(Gcps3GXDrawPacket *packet, const Gcps3GXState *s
     gcps3_gx_copy_pos_mtx(
         packet->current_matrix,
         (const float (*)[4])state->position_matrices[state->current_matrix_id]);
+    packet->texture = state->texture;
     packet->vertex_count = 0;
 }
 
@@ -60,6 +61,8 @@ void gcps3_gx_state_reset(void)
     s_gx_state.current_color.g = 255;
     s_gx_state.current_color.b = 255;
     s_gx_state.current_color.a = 255;
+    s_gx_state.current_s = 0.0f;
+    s_gx_state.current_t = 0.0f;
     s_gx_state.viewport.x = 0.0f;
     s_gx_state.viewport.y = 0.0f;
     s_gx_state.viewport.width = 640.0f;
@@ -68,6 +71,11 @@ void gcps3_gx_state_reset(void)
     s_gx_state.viewport.far_z = 1.0f;
     s_gx_state.descriptor.position = GX_ATTR_DIRECT;
     s_gx_state.descriptor.color0 = GX_ATTR_DIRECT;
+    s_gx_state.descriptor.tex0 = GX_ATTR_NONE;
+    s_gx_state.texture.bound = 0;
+    s_gx_state.texture.rgba8_pixels = 0;
+    s_gx_state.texture.width = 0;
+    s_gx_state.texture.height = 0;
     s_gx_state.current_matrix_id = 0;
     for (i = 0; i < GCPS3_GX_MAX_POS_MATRICES; i++) {
         set_identity_pos_mtx(s_gx_state.position_matrices[i]);

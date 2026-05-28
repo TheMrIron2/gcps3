@@ -15,7 +15,15 @@ typedef float Gcps3GXPosMtx[3][4];
 typedef struct Gcps3GXVtxDesc {
     GXAttrType position;
     GXAttrType color0;
+    GXAttrType tex0;
 } Gcps3GXVtxDesc;
+
+typedef struct Gcps3GXTextureState {
+    int bound;
+    const void *rgba8_pixels;
+    uint32_t width;
+    uint32_t height;
+} Gcps3GXTextureState;
 
 typedef enum Gcps3GXPrimitive {
     GCPS3_GX_PRIMITIVE_TRIANGLES = 0
@@ -26,6 +34,8 @@ typedef struct Gcps3GXVertex {
     float y;
     float z;
     GXColor color;
+    float s;
+    float t;
 } Gcps3GXVertex;
 
 typedef struct Gcps3GXDrawPacket {
@@ -33,6 +43,7 @@ typedef struct Gcps3GXDrawPacket {
     Gcps3GXVtxDesc descriptor;
     uint32_t current_matrix_id;
     Gcps3GXPosMtx current_matrix;
+    Gcps3GXTextureState texture;
     unsigned int vertex_count;
     Gcps3GXVertex vertices[GCPS3_GX_MAX_PACKET_VERTICES];
 } Gcps3GXDrawPacket;
@@ -42,8 +53,11 @@ typedef struct Gcps3GXState {
     int drawing;
     GXColor clear_color;
     GXColor current_color;
+    float current_s;
+    float current_t;
     GXViewport viewport;
     Gcps3GXVtxDesc descriptor;
+    Gcps3GXTextureState texture;
     uint32_t current_matrix_id;
     Gcps3GXPosMtx position_matrices[GCPS3_GX_MAX_POS_MATRICES];
     Gcps3GXDrawPacket packet;

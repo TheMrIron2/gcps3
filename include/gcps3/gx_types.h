@@ -19,4 +19,10 @@ typedef struct GXViewport {
     float far_z;
 } GXViewport;
 
+typedef struct GXTexObj {
+    const void *rgba8_pixels;
+    uint32_t width;
+    uint32_t height;
+} GXTexObj;
+
 #endif

@@ -19,8 +19,9 @@ The repository currently contains a host-buildable C99 runtime skeleton with:
 - immediate-mode triangle packet validation
 - minimal vertex descriptor state
 - minimal position matrix state
+- minimal RGBA8 texture-object state for immediate-mode triangle validation
 
-No final rendering backend, PS3 backend, RSX backend, SPE job system, texture support, TEV support, or commercial game support exists yet.
+No final rendering backend, PS3 backend, RSX backend, SPE job system, full texture pipeline, TEV support, or commercial game support exists yet.
 
 ## Objectives
 
@@ -42,6 +43,7 @@ cmake --build build
 ./build/gx_validation
 ./build/gx_vtxdesc
 ./build/gx_matrix
+./build/gx_textured_triangle
 ```
 
 ## Optional gxpc debug visualizer
@@ -58,4 +60,4 @@ cmake --build build-gxpc
 ./build-gxpc/gx_triangle
 ```
 
-`gxpc` is only a debug visualizer for early frontend validation. It is not the final renderer, does not replace `gxrsx`, and intentionally does not implement textures, TEV, or real GameCube rendering semantics. It currently applies captured position matrices only as a visual validation aid.
+`gxpc` is only a debug visualizer for early frontend validation. It is not the final renderer, does not replace `gxrsx`, and intentionally does not implement TEV or real GameCube rendering semantics. It currently applies captured position matrices and RGBA8 textures only as visual validation aids.

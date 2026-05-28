@@ -24,6 +24,20 @@ static const char *attr_type_name(GXAttrType type)
     }
 }
 
+static void log_texture(const Gcps3GXDrawPacket *packet)
+{
+    if (!packet->texture.bound) {
+        GCPS3_LOG_INFO("gxnull", "texture bound=no");
+        return;
+    }
+
+    GCPS3_LOG_INFO(
+        "gxnull",
+        "texture bound=yes size=%ux%u",
+        (unsigned int)packet->texture.width,
+        (unsigned int)packet->texture.height);
+}
+
 static void log_matrix(const Gcps3GXDrawPacket *packet)
 {
     GCPS3_LOG_INFO(
@@ -117,20 +131,22 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
 
     GCPS3_LOG_INFO(
         "gxnull",
-        "draw primitive=%s vertex_count=%u desc[position=%s color0=%s] mtx=%u",
+        "draw primitive=%s vertex_count=%u desc[position=%s color0=%s tex0=%s] mtx=%u",
         primitive_name(packet->primitive),
         packet->vertex_count,
         attr_type_name(packet->descriptor.position),
         attr_type_name(packet->descriptor.color0),
+        attr_type_name(packet->descriptor.tex0),
         (unsigned int)packet->current_matrix_id);
 
     log_matrix(packet);
+    log_texture(packet);
 
     for (i = 0; i < packet->vertex_count; i++) {
         const Gcps3GXVertex *vertex = &packet->vertices[i];
         GCPS3_LOG_INFO(
             "gxnull",
-            "vertex[%u] position=(%.3f, %.3f, %.3f) color=(%u,%u,%u,%u)",
+            "vertex[%u] position=(%.3f, %.3f, %.3f) color=(%u,%u,%u,%u) texcoord=(%.3f, %.3f)",
             i,
             vertex->x,
             vertex->y,
@@ -138,6 +154,8 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
             vertex->color.r,
             vertex->color.g,
             vertex->color.b,
-            vertex->color.a);
+            vertex->color.a,
+            vertex->s,
+            vertex->t);
     }
 }
