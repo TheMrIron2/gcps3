@@ -10,7 +10,11 @@ option(GCPS3_ENABLE_GXPC "Enable the SDL2/OpenGL gxpc debug visualizer backend" 
 
 set(GCPS3_GX_BACKEND_SOURCE src/backends/pc/gxnull.c)
 if(GCPS3_ENABLE_GXPC)
-    find_package(SDL2 REQUIRED)
+    find_package(SDL2 QUIET)
+    if(NOT SDL2_FOUND AND NOT TARGET SDL2::SDL2)
+        message(FATAL_ERROR "GCPS3_ENABLE_GXPC=ON requires SDL2. Install SDL2 development files or configure with -DGCPS3_ENABLE_GXPC=OFF to use the default dependency-free gxnull backend.")
+    endif()
+
     find_package(OpenGL REQUIRED)
     set(GCPS3_GX_BACKEND_SOURCE src/backends/pc/gxpc.c)
 endif()

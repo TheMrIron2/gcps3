@@ -8,8 +8,8 @@ int main(void)
     Gcps3Config config = gcps3_config_default();
     GXColor clear_color;
     float translate[3][4] = {
-        { 1.0f, 0.0f, 0.0f, 0.25f },
-        { 0.0f, 1.0f, 0.0f, 0.10f },
+        { 1.0f, 0.0f, 0.0f, 0.35f },
+        { 0.0f, 1.0f, 0.0f, 0.20f },
         { 0.0f, 0.0f, 1.0f, 0.00f }
     };
 

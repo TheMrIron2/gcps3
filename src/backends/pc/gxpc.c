@@ -7,8 +7,8 @@
 
 /*
  * gxpc is a development-only SDL2/OpenGL debug visualizer for early GX frontend
- * validation. It is not the final renderer and deliberately ignores GX matrix
- * transforms, textures, TEV, and platform-specific rendering paths.
+ * validation. It is not the final renderer and deliberately ignores textures,
+ * TEV, and platform-specific rendering paths.
  */
 #define GCPS3_GXPC_PRESENT_MS 1200u
 
@@ -42,6 +42,15 @@ static void apply_clear_color(GXColor color)
         color_channel(color.g),
         color_channel(color.b),
         color_channel(color.a));
+}
+
+static void transform_position(const Gcps3GXDrawPacket *packet, const Gcps3GXVertex *vertex, float *x, float *y, float *z)
+{
+    const float(*mtx)[4] = packet->current_matrix;
+
+    *x = mtx[0][0] * vertex->x + mtx[0][1] * vertex->y + mtx[0][2] * vertex->z + mtx[0][3];
+    *y = mtx[1][0] * vertex->x + mtx[1][1] * vertex->y + mtx[1][2] * vertex->z + mtx[1][3];
+    *z = mtx[2][0] * vertex->x + mtx[2][1] * vertex->y + mtx[2][2] * vertex->z + mtx[2][3];
 }
 
 static int ensure_window(const Gcps3GXState *state)
@@ -169,8 +178,13 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
     glBegin(GL_TRIANGLES);
     for (i = 0; i < packet->vertex_count; i++) {
         const Gcps3GXVertex *vertex = &packet->vertices[i];
+        float x;
+        float y;
+        float z;
+
+        transform_position(packet, vertex, &x, &y, &z);
         glColor4ub(vertex->color.r, vertex->color.g, vertex->color.b, vertex->color.a);
-        glVertex3f(vertex->x, vertex->y, vertex->z);
+        glVertex3f(x, y, z);
     }
     glEnd();
 
