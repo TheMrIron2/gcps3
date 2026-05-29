@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: scummvm/dockerized-toolchains:ps3
+
+    steps:
+    - uses: actions/checkout@v6
+    
+    - name: Build
+      run: cmake -S. -Bbuild -DCMAKE_TOOLCHAIN_FILE=ppu.cmake -D CMAKE_BUILD_TYPE=Debug && cmake --build build
