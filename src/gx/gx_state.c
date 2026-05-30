@@ -37,6 +37,7 @@ void gcps3_gx_draw_packet_reset(Gcps3GXDrawPacket *packet, const Gcps3GXState *s
     packet->expected_vertex_count = 0;
     packet->source_vertex_count = 0;
     packet->descriptor = state->descriptor;
+    packet->attr_formats = state->attr_formats;
     packet->current_matrix_id = state->current_matrix_id;
     gcps3_gx_copy_pos_mtx(
         packet->current_matrix,
@@ -77,6 +78,15 @@ void gcps3_gx_state_reset(void)
     s_gx_state.descriptor.position = GX_ATTR_DIRECT;
     s_gx_state.descriptor.color0 = GX_ATTR_DIRECT;
     s_gx_state.descriptor.tex0 = GX_ATTR_NONE;
+    s_gx_state.attr_formats.position.comp_cnt = GX_POS_XYZ;
+    s_gx_state.attr_formats.position.comp_type = GX_S16;
+    s_gx_state.attr_formats.position.frac = 0;
+    s_gx_state.attr_formats.color0.comp_cnt = GX_CLR_RGBA;
+    s_gx_state.attr_formats.color0.comp_type = GX_RGBA8;
+    s_gx_state.attr_formats.color0.frac = 0;
+    s_gx_state.attr_formats.tex0.comp_cnt = GX_TEX_ST;
+    s_gx_state.attr_formats.tex0.comp_type = GX_F32;
+    s_gx_state.attr_formats.tex0.frac = 0;
     s_gx_state.position_array.base = 0;
     s_gx_state.position_array.stride = 0;
     s_gx_state.color0_array.base = 0;

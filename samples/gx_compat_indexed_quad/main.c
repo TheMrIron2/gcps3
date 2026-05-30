@@ -39,10 +39,12 @@ int main(void)
     GXClear();
 
     GXClearVtxDesc();
-    GXSetVtxDesc(GX_ATTR_POSITION, GX_INDEX8);
-    GXSetVtxDesc(GX_ATTR_COLOR0, GX_INDEX8);
-    GX_SetArray(GX_ATTR_POSITION, positions, (uint8_t)sizeof(positions[0]));
-    GX_SetArray(GX_ATTR_COLOR0, colors, (uint8_t)sizeof(colors[0]));
+    GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+    GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+    GX_SetArray(GX_VA_POS, positions, (uint8_t)sizeof(positions[0]));
+    GX_SetArray(GX_VA_CLR0, colors, (uint8_t)sizeof(colors[0]));
 
     GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
     GX_Color1x8(0);

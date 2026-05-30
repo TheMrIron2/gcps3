@@ -11,6 +11,9 @@ static void gx_warn_uninitialized(const char *call_name)
 
 static int16_t gx_read_s16_native(const void *ptr);
 
+static int gx_position_index8_format_matches(const Gcps3GXVtxFmtState *formats);
+static int gx_color0_index8_format_matches(const Gcps3GXVtxFmtState *formats);
+
 static void gx_reset_triangle_packet(Gcps3GXState *state)
 {
     gcps3_gx_draw_packet_reset(&state->packet, state, GCPS3_GX_PRIMITIVE_TRIANGLES);
@@ -235,6 +238,11 @@ static void gx_position1x8(const char *call_name, uint8_t index)
         return;
     }
 
+    if (!gx_position_index8_format_matches(&state->packet.attr_formats)) {
+        GCPS3_LOG_WARN("gx", "%s ignored because position format is not XYZ/S16/frac0", call_name);
+        return;
+    }
+
     if (!state->position_array.base || state->position_array.stride == 0u) {
         GCPS3_LOG_WARN("gx", "%s ignored because no valid position array is bound", call_name);
         return;
@@ -266,6 +274,11 @@ static void gx_color1x8(const char *call_name, uint8_t index)
 
     if (state->packet.descriptor.color0 != GX_ATTR_INDEX8) {
         GCPS3_LOG_WARN("gx", "%s ignored because color0 is not enabled as index8", call_name);
+        return;
+    }
+
+    if (!gx_color0_index8_format_matches(&state->packet.attr_formats)) {
+        GCPS3_LOG_WARN("gx", "%s ignored because color0 format is not RGBA/RGBA8/frac0", call_name);
         return;
     }
 
@@ -333,6 +346,34 @@ static const char *gx_attr_type_name(GXAttrType type)
     }
 }
 
+static const char *gx_comp_cnt_name(GXCompCnt comp_cnt)
+{
+    switch (comp_cnt) {
+    case GX_POS_XYZ:
+        return "pos_xyz";
+    case GX_CLR_RGBA:
+        return "clr_rgba";
+    case GX_TEX_ST:
+        return "tex_st";
+    default:
+        return "unknown";
+    }
+}
+
+static const char *gx_comp_type_name(GXCompType comp_type)
+{
+    switch (comp_type) {
+    case GX_S16:
+        return "s16";
+    case GX_RGBA8:
+        return "rgba8";
+    case GX_F32:
+        return "f32";
+    default:
+        return "unknown";
+    }
+}
+
 static int gx_attr_type_supported_for_attr(GXAttr attr, GXAttrType type)
 {
     if (type == GX_ATTR_NONE || type == GX_ATTR_DIRECT) {
@@ -344,6 +385,48 @@ static int gx_attr_type_supported_for_attr(GXAttr attr, GXAttrType type)
     }
 
     return 0;
+}
+
+static int gx_attr_format_supported(GXAttr attr, GXCompCnt comp_cnt, GXCompType comp_type)
+{
+    switch (attr) {
+    case GX_ATTR_POSITION:
+        return comp_cnt == GX_POS_XYZ && comp_type == GX_S16;
+    case GX_ATTR_COLOR0:
+        return comp_cnt == GX_CLR_RGBA && comp_type == GX_RGBA8;
+    case GX_ATTR_TEX0:
+        return comp_cnt == GX_TEX_ST && comp_type == GX_F32;
+    default:
+        return 0;
+    }
+}
+
+static Gcps3GXVtxAttrFmt *gx_attr_format_target(Gcps3GXVtxFmtState *formats, GXAttr attr)
+{
+    switch (attr) {
+    case GX_ATTR_POSITION:
+        return &formats->position;
+    case GX_ATTR_COLOR0:
+        return &formats->color0;
+    case GX_ATTR_TEX0:
+        return &formats->tex0;
+    default:
+        return 0;
+    }
+}
+
+static int gx_position_index8_format_matches(const Gcps3GXVtxFmtState *formats)
+{
+    return formats->position.comp_cnt == GX_POS_XYZ &&
+           formats->position.comp_type == GX_S16 &&
+           formats->position.frac == 0u;
+}
+
+static int gx_color0_index8_format_matches(const Gcps3GXVtxFmtState *formats)
+{
+    return formats->color0.comp_cnt == GX_CLR_RGBA &&
+           formats->color0.comp_type == GX_RGBA8 &&
+           formats->color0.frac == 0u;
 }
 
 static int16_t gx_read_s16_native(const void *ptr)
@@ -605,6 +688,55 @@ void GX_SetArray(GXAttr attr, const void *base, uint8_t stride)
     }
 
     GCPS3_LOG_INFO("gx", "array %s base=%p stride=%u", gx_attr_name(attr), base, (unsigned int)stride);
+}
+
+void GX_SetVtxAttrFmt(GXVtxFmt vtxfmt, GXAttr attr, GXCompCnt comp_cnt, GXCompType comp_type, uint8_t frac)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+    Gcps3GXVtxAttrFmt *target;
+
+    if (vtxfmt != GX_VTXFMT0) {
+        GCPS3_LOG_WARN("gx", "GX_SetVtxAttrFmt called with unsupported vertex format=%d", (int)vtxfmt);
+        return;
+    }
+
+    if (!gx_attr_format_supported(attr, comp_cnt, comp_type)) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "GX_SetVtxAttrFmt attr=%s has unsupported count/type %s/%s",
+            gx_attr_name(attr),
+            gx_comp_cnt_name(comp_cnt),
+            gx_comp_type_name(comp_type));
+        return;
+    }
+
+    target = gx_attr_format_target(&state->attr_formats, attr);
+    if (!target) {
+        GCPS3_LOG_WARN("gx", "GX_SetVtxAttrFmt called with unsupported attr=%d", (int)attr);
+        return;
+    }
+
+    target->comp_cnt = comp_cnt;
+    target->comp_type = comp_type;
+    target->frac = frac;
+
+    if (!state->initialized) {
+        GCPS3_LOG_WARN("gx", "GX_SetVtxAttrFmt called before GXInit; state recorded only");
+        return;
+    }
+
+    if (state->drawing) {
+        GCPS3_LOG_WARN("gx", "GX_SetVtxAttrFmt called during an active immediate draw; format changes apply to the next packet");
+        return;
+    }
+
+    GCPS3_LOG_INFO(
+        "gx",
+        "vertex attr format %s=%s/%s frac=%u",
+        gx_attr_name(attr),
+        gx_comp_cnt_name(comp_cnt),
+        gx_comp_type_name(comp_type),
+        (unsigned int)frac);
 }
 
 void GXInitTexObj(GXTexObj *obj, const void *rgba8_pixels, uint32_t width, uint32_t height)

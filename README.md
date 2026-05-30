@@ -8,7 +8,7 @@
 
 ## Current status
 
-The repository currently contains a C99 runtime skeleton with minimal compatibility implementations. No final rendering backends, SPE jobs or commercial game support exists yet.
+The repository currently contains a C99 runtime skeleton with minimal compatibility implementations. No final rendering backends or commercial game support exists yet.
 
 ## Objectives
 

@@ -38,6 +38,34 @@ static const char *attr_type_name(GXAttrType type)
     }
 }
 
+static const char *comp_cnt_name(GXCompCnt comp_cnt)
+{
+    switch (comp_cnt) {
+    case GX_POS_XYZ:
+        return "pos_xyz";
+    case GX_CLR_RGBA:
+        return "clr_rgba";
+    case GX_TEX_ST:
+        return "tex_st";
+    default:
+        return "unknown";
+    }
+}
+
+static const char *comp_type_name(GXCompType comp_type)
+{
+    switch (comp_type) {
+    case GX_S16:
+        return "s16";
+    case GX_RGBA8:
+        return "rgba8";
+    case GX_F32:
+        return "f32";
+    default:
+        return "unknown";
+    }
+}
+
 static const char *compare_name(GXCompare func)
 {
     switch (func) {
@@ -60,6 +88,22 @@ static const char *compare_name(GXCompare func)
     default:
         return "unknown";
     }
+}
+
+static void log_attr_formats(const Gcps3GXDrawPacket *packet)
+{
+    GCPS3_LOG_INFO(
+        "gxnull",
+        "fmt position=%s/%s frac=%u color0=%s/%s frac=%u tex0=%s/%s frac=%u",
+        comp_cnt_name(packet->attr_formats.position.comp_cnt),
+        comp_type_name(packet->attr_formats.position.comp_type),
+        (unsigned int)packet->attr_formats.position.frac,
+        comp_cnt_name(packet->attr_formats.color0.comp_cnt),
+        comp_type_name(packet->attr_formats.color0.comp_type),
+        (unsigned int)packet->attr_formats.color0.frac,
+        comp_cnt_name(packet->attr_formats.tex0.comp_cnt),
+        comp_type_name(packet->attr_formats.tex0.comp_type),
+        (unsigned int)packet->attr_formats.tex0.frac);
 }
 
 static void log_depth(const Gcps3GXDrawPacket *packet)
@@ -195,6 +239,7 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
     }
 
     log_matrix(packet);
+    log_attr_formats(packet);
     log_depth(packet);
     log_texture(packet);
 

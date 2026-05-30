@@ -13,6 +13,10 @@ typedef enum GXAttr {
     GX_ATTR_TEX0 = 2
 } GXAttr;
 
+#define GX_VA_POS GX_ATTR_POSITION
+#define GX_VA_CLR0 GX_ATTR_COLOR0
+#define GX_VA_TEX0 GX_ATTR_TEX0
+
 typedef enum GXAttrType {
     GX_ATTR_NONE = 0,
     GX_ATTR_DIRECT = 1,
@@ -43,6 +47,18 @@ typedef enum GXVtxFmt {
     GX_VTXFMT0 = 0
 } GXVtxFmt;
 
+typedef enum GXCompCnt {
+    GX_POS_XYZ = 0,
+    GX_CLR_RGBA = 1,
+    GX_TEX_ST = 2
+} GXCompCnt;
+
+typedef enum GXCompType {
+    GX_S16 = 0,
+    GX_RGBA8 = 1,
+    GX_F32 = 2
+} GXCompType;
+
 void GXInit(void);
 void GXShutdown(void);
 void GXSetViewport(float x, float y, float width, float height, float near_z, float far_z);
@@ -52,6 +68,7 @@ void GXSetZMode(int enable, GXCompare func, int update_enable);
 void GXClearVtxDesc(void);
 void GXSetVtxDesc(GXAttr attr, GXAttrType type);
 void GX_SetArray(GXAttr attr, const void *base, uint8_t stride);
+void GX_SetVtxAttrFmt(GXVtxFmt vtxfmt, GXAttr attr, GXCompCnt comp_cnt, GXCompType comp_type, uint8_t frac);
 void GXInitTexObj(GXTexObj *obj, const void *rgba8_pixels, uint32_t width, uint32_t height);
 void GXLoadTexObj(const GXTexObj *obj);
 void GXLoadPosMtxImm(const float mtx[3][4], uint32_t id);

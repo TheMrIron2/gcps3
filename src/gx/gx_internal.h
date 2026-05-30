@@ -36,6 +36,18 @@ typedef struct Gcps3GXArrayBinding {
     uint8_t stride;
 } Gcps3GXArrayBinding;
 
+typedef struct Gcps3GXVtxAttrFmt {
+    GXCompCnt comp_cnt;
+    GXCompType comp_type;
+    uint8_t frac;
+} Gcps3GXVtxAttrFmt;
+
+typedef struct Gcps3GXVtxFmtState {
+    Gcps3GXVtxAttrFmt position;
+    Gcps3GXVtxAttrFmt color0;
+    Gcps3GXVtxAttrFmt tex0;
+} Gcps3GXVtxFmtState;
+
 typedef enum Gcps3GXPrimitive {
     GCPS3_GX_PRIMITIVE_TRIANGLES = 0
 } Gcps3GXPrimitive;
@@ -60,6 +72,7 @@ typedef struct Gcps3GXDrawPacket {
     uint16_t expected_vertex_count;
     unsigned int source_vertex_count;
     Gcps3GXVtxDesc descriptor;
+    Gcps3GXVtxFmtState attr_formats;
     uint32_t current_matrix_id;
     Gcps3GXPosMtx current_matrix;
     Gcps3GXTextureState texture;
@@ -78,6 +91,7 @@ typedef struct Gcps3GXState {
     float current_t;
     GXViewport viewport;
     Gcps3GXVtxDesc descriptor;
+    Gcps3GXVtxFmtState attr_formats;
     Gcps3GXArrayBinding position_array;
     Gcps3GXArrayBinding color0_array;
     Gcps3GXTextureState texture;
