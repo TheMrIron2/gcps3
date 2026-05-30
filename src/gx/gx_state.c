@@ -32,8 +32,10 @@ void gcps3_gx_copy_pos_mtx(Gcps3GXPosMtx dst, const float src[3][4])
 
 void gcps3_gx_draw_packet_reset(Gcps3GXDrawPacket *packet, const Gcps3GXState *state, Gcps3GXPrimitive primitive)
 {
+    packet->source_primitive = state->active_source_primitive;
     packet->primitive = primitive;
     packet->expected_vertex_count = 0;
+    packet->source_vertex_count = 0;
     packet->descriptor = state->descriptor;
     packet->current_matrix_id = state->current_matrix_id;
     gcps3_gx_copy_pos_mtx(
@@ -55,6 +57,7 @@ void gcps3_gx_state_reset(void)
 
     s_gx_state.initialized = 0;
     s_gx_state.drawing = 0;
+    s_gx_state.active_source_primitive = GCPS3_GX_SOURCE_PRIMITIVE_TRIANGLES;
     s_gx_state.clear_color.r = 0;
     s_gx_state.clear_color.g = 0;
     s_gx_state.clear_color.b = 0;
@@ -82,6 +85,7 @@ void gcps3_gx_state_reset(void)
     s_gx_state.depth.z_func = GX_LEQUAL;
     s_gx_state.depth.z_update_enable = 0;
     s_gx_state.current_matrix_id = 0;
+    s_gx_state.quad_stage_count = 0;
     for (i = 0; i < GCPS3_GX_MAX_POS_MATRICES; i++) {
         set_identity_pos_mtx(s_gx_state.position_matrices[i]);
     }

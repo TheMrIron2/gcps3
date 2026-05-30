@@ -30,7 +30,8 @@ typedef enum GXCompare {
 } GXCompare;
 
 typedef enum GXPrimitive {
-    GX_TRIANGLES = 0
+    GX_TRIANGLES = 0,
+    GX_QUADS = 1
 } GXPrimitive;
 
 typedef enum GXVtxFmt {

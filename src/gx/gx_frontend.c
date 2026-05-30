@@ -12,11 +12,12 @@ static void gx_warn_uninitialized(const char *call_name)
 static void gx_reset_triangle_packet(Gcps3GXState *state)
 {
     gcps3_gx_draw_packet_reset(&state->packet, state, GCPS3_GX_PRIMITIVE_TRIANGLES);
+    state->quad_stage_count = 0;
 }
 
 static int gx_primitive_is_supported(GXPrimitive primitive)
 {
-    return primitive == GX_TRIANGLES;
+    return primitive == GX_TRIANGLES || primitive == GX_QUADS;
 }
 
 static int gx_vtxfmt_is_supported(GXVtxFmt vtxfmt)
@@ -24,7 +25,19 @@ static int gx_vtxfmt_is_supported(GXVtxFmt vtxfmt)
     return vtxfmt == GX_VTXFMT0;
 }
 
-static void gx_begin_triangles_with_expected_count(const char *call_name, uint16_t expected_vertex_count)
+static Gcps3GXSourcePrimitive gx_source_primitive_from_public(GXPrimitive primitive)
+{
+    if (primitive == GX_QUADS) {
+        return GCPS3_GX_SOURCE_PRIMITIVE_QUADS;
+    }
+
+    return GCPS3_GX_SOURCE_PRIMITIVE_TRIANGLES;
+}
+
+static void gx_begin_with_source_primitive(
+    const char *call_name,
+    Gcps3GXSourcePrimitive source_primitive,
+    uint16_t expected_vertex_count)
 {
     Gcps3GXState *state = gcps3_gx_state();
 
@@ -39,7 +52,9 @@ static void gx_begin_triangles_with_expected_count(const char *call_name, uint16
     }
 
     state->drawing = 1;
+    state->active_source_primitive = source_primitive;
     gx_reset_triangle_packet(state);
+    state->packet.source_primitive = source_primitive;
     state->packet.expected_vertex_count = expected_vertex_count;
 }
 
@@ -73,19 +88,71 @@ static void gx_validate_expected_vertex_count(const Gcps3GXDrawPacket *packet)
         return;
     }
 
-    if (packet->expected_vertex_count != packet->vertex_count) {
+    if (packet->expected_vertex_count != packet->source_vertex_count) {
         GCPS3_LOG_WARN(
             "gx",
-            "GX_Begin expected %u vertices but packet contains %u complete vertex/vertices",
+            "GX_Begin expected %u source vertices but saw %u source vertex/vertices",
             (unsigned int)packet->expected_vertex_count,
-            packet->vertex_count);
+            packet->source_vertex_count);
     }
+}
+
+static int gx_append_packet_vertex(Gcps3GXState *state, const Gcps3GXVertex *vertex)
+{
+    if (state->packet.vertex_count >= GCPS3_GX_MAX_PACKET_VERTICES) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "GX immediate packet capacity %u reached; dropping vertex",
+            (unsigned int)GCPS3_GX_MAX_PACKET_VERTICES);
+        return 0;
+    }
+
+    state->packet.vertices[state->packet.vertex_count] = *vertex;
+    state->packet.vertex_count++;
+    return 1;
+}
+
+static int gx_append_quad_as_triangles(Gcps3GXState *state)
+{
+    if (state->packet.vertex_count + 6u > GCPS3_GX_MAX_PACKET_VERTICES) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "GX immediate packet capacity %u cannot fit another converted quad; dropping quad",
+            (unsigned int)GCPS3_GX_MAX_PACKET_VERTICES);
+        return 0;
+    }
+
+    (void)gx_append_packet_vertex(state, &state->quad_stage[0]);
+    (void)gx_append_packet_vertex(state, &state->quad_stage[1]);
+    (void)gx_append_packet_vertex(state, &state->quad_stage[2]);
+    (void)gx_append_packet_vertex(state, &state->quad_stage[0]);
+    (void)gx_append_packet_vertex(state, &state->quad_stage[2]);
+    (void)gx_append_packet_vertex(state, &state->quad_stage[3]);
+    return 1;
+}
+
+static void gx_submit_source_vertex(Gcps3GXState *state, const Gcps3GXVertex *vertex)
+{
+    state->packet.source_vertex_count++;
+
+    if (state->active_source_primitive == GCPS3_GX_SOURCE_PRIMITIVE_QUADS) {
+        state->quad_stage[state->quad_stage_count] = *vertex;
+        state->quad_stage_count++;
+
+        if (state->quad_stage_count == 4u) {
+            (void)gx_append_quad_as_triangles(state);
+            state->quad_stage_count = 0;
+        }
+        return;
+    }
+
+    (void)gx_append_packet_vertex(state, vertex);
 }
 
 static void gx_position3f32(const char *call_name, float x, float y, float z)
 {
     Gcps3GXState *state = gcps3_gx_state();
-    Gcps3GXVertex *vertex;
+    Gcps3GXVertex vertex;
 
     if (!state->initialized) {
         gx_warn_uninitialized(call_name);
@@ -102,22 +169,13 @@ static void gx_position3f32(const char *call_name, float x, float y, float z)
         return;
     }
 
-    if (state->packet.vertex_count >= GCPS3_GX_MAX_PACKET_VERTICES) {
-        GCPS3_LOG_WARN(
-            "gx",
-            "GX immediate packet capacity %u reached; dropping vertex",
-            (unsigned int)GCPS3_GX_MAX_PACKET_VERTICES);
-        return;
-    }
-
-    vertex = &state->packet.vertices[state->packet.vertex_count];
-    vertex->x = x;
-    vertex->y = y;
-    vertex->z = z;
-    vertex->color = state->current_color;
-    vertex->s = state->current_s;
-    vertex->t = state->current_t;
-    state->packet.vertex_count++;
+    vertex.x = x;
+    vertex.y = y;
+    vertex.z = z;
+    vertex.color = state->current_color;
+    vertex.s = state->current_s;
+    vertex.t = state->current_t;
+    gx_submit_source_vertex(state, &vertex);
 }
 
 static void gx_color4u8(const char *call_name, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
@@ -494,7 +552,7 @@ void GXSetCurrentMtx(uint32_t id)
  */
 void GXBeginTriangles(void)
 {
-    gx_begin_triangles_with_expected_count("GXBeginTriangles", 0);
+    gx_begin_with_source_primitive("GXBeginTriangles", GCPS3_GX_SOURCE_PRIMITIVE_TRIANGLES, 0);
 }
 
 void GXPosition3f32(float x, float y, float z)
@@ -526,6 +584,15 @@ void GXEnd(void)
         return;
     }
 
+    if (state->active_source_primitive == GCPS3_GX_SOURCE_PRIMITIVE_QUADS && state->quad_stage_count != 0u) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "quad source vertex count %u is not a multiple of 4; discarding %u trailing source vertex/vertices",
+            state->packet.source_vertex_count,
+            state->quad_stage_count);
+        state->quad_stage_count = 0;
+    }
+
     gx_trim_incomplete_triangles(&state->packet);
     gx_validate_expected_vertex_count(&state->packet);
 
@@ -551,7 +618,7 @@ void GX_Begin(GXPrimitive primitive, GXVtxFmt vtxfmt, uint16_t vertex_count)
         return;
     }
 
-    gx_begin_triangles_with_expected_count("GX_Begin", vertex_count);
+    gx_begin_with_source_primitive("GX_Begin", gx_source_primitive_from_public(primitive), vertex_count);
 }
 
 void GX_End(void)

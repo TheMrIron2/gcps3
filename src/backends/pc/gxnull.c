@@ -12,6 +12,18 @@ static const char *primitive_name(Gcps3GXPrimitive primitive)
     }
 }
 
+static const char *source_primitive_name(Gcps3GXSourcePrimitive primitive)
+{
+    switch (primitive) {
+    case GCPS3_GX_SOURCE_PRIMITIVE_TRIANGLES:
+        return "triangles";
+    case GCPS3_GX_SOURCE_PRIMITIVE_QUADS:
+        return "quads";
+    default:
+        return "unknown";
+    }
+}
+
 static const char *attr_type_name(GXAttrType type)
 {
     switch (type) {
@@ -165,14 +177,20 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
 
     GCPS3_LOG_INFO(
         "gxnull",
-        "draw primitive=%s vertex_count=%u expected_vertex_count=%u desc[position=%s color0=%s tex0=%s] mtx=%u",
+        "draw source_primitive=%s backend_primitive=%s source_vertex_count=%u vertex_count=%u expected_vertex_count=%u desc[position=%s color0=%s tex0=%s] mtx=%u",
+        source_primitive_name(packet->source_primitive),
         primitive_name(packet->primitive),
+        packet->source_vertex_count,
         packet->vertex_count,
         packet->expected_vertex_count,
         attr_type_name(packet->descriptor.position),
         attr_type_name(packet->descriptor.color0),
         attr_type_name(packet->descriptor.tex0),
         (unsigned int)packet->current_matrix_id);
+
+    if (packet->source_primitive == GCPS3_GX_SOURCE_PRIMITIVE_QUADS) {
+        GCPS3_LOG_INFO("gxnull", "source quads were converted to backend triangles");
+    }
 
     log_matrix(packet);
     log_depth(packet);

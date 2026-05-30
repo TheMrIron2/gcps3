@@ -35,6 +35,11 @@ typedef enum Gcps3GXPrimitive {
     GCPS3_GX_PRIMITIVE_TRIANGLES = 0
 } Gcps3GXPrimitive;
 
+typedef enum Gcps3GXSourcePrimitive {
+    GCPS3_GX_SOURCE_PRIMITIVE_TRIANGLES = 0,
+    GCPS3_GX_SOURCE_PRIMITIVE_QUADS = 1
+} Gcps3GXSourcePrimitive;
+
 typedef struct Gcps3GXVertex {
     float x;
     float y;
@@ -45,8 +50,10 @@ typedef struct Gcps3GXVertex {
 } Gcps3GXVertex;
 
 typedef struct Gcps3GXDrawPacket {
+    Gcps3GXSourcePrimitive source_primitive;
     Gcps3GXPrimitive primitive;
     uint16_t expected_vertex_count;
+    unsigned int source_vertex_count;
     Gcps3GXVtxDesc descriptor;
     uint32_t current_matrix_id;
     Gcps3GXPosMtx current_matrix;
@@ -59,6 +66,7 @@ typedef struct Gcps3GXDrawPacket {
 typedef struct Gcps3GXState {
     int initialized;
     int drawing;
+    Gcps3GXSourcePrimitive active_source_primitive;
     GXColor clear_color;
     GXColor current_color;
     float current_s;
@@ -70,6 +78,8 @@ typedef struct Gcps3GXState {
     uint32_t current_matrix_id;
     Gcps3GXPosMtx position_matrices[GCPS3_GX_MAX_POS_MATRICES];
     Gcps3GXDrawPacket packet;
+    unsigned int quad_stage_count;
+    Gcps3GXVertex quad_stage[4];
 } Gcps3GXState;
 
 Gcps3GXState *gcps3_gx_state(void);

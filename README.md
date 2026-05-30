@@ -49,6 +49,8 @@ cmake --build build
 ./build/gx_textured_cube
 ./build/gx_compat_triangle
 ./build/gx_compat_textured_triangle
+./build/gx_compat_quad
+./build/gx_compat_textured_quad
 ```
 
 ## Optional gxpc debug visualizer
