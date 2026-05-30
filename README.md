@@ -2,6 +2,8 @@
 
 <img width="80%" alt="gcps3-banner" src="https://github.com/user-attachments/assets/2ae8f269-0897-4b13-89d8-2effb7cb09fb" />
 
+[![CI](https://github.com/TheMrIron2/gcps3/actions/workflows/build.yml/badge.svg)](https://github.com/TheMrIron2/gcps3/actions/workflows/build.yml)
+
 `gcps3` is an experimental GameCube / Wii-to-PlayStation 3 portability layer.
 
 `gcps3` is not an emulator. Its goal is to provide GameCube/Wii-style APIs that can be implemented on native host and PS3 backends, allowing source code to be easily adapted.
