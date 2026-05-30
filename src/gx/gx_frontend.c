@@ -14,6 +14,35 @@ static void gx_reset_triangle_packet(Gcps3GXState *state)
     gcps3_gx_draw_packet_reset(&state->packet, state, GCPS3_GX_PRIMITIVE_TRIANGLES);
 }
 
+static int gx_primitive_is_supported(GXPrimitive primitive)
+{
+    return primitive == GX_TRIANGLES;
+}
+
+static int gx_vtxfmt_is_supported(GXVtxFmt vtxfmt)
+{
+    return vtxfmt == GX_VTXFMT0;
+}
+
+static void gx_begin_triangles_with_expected_count(const char *call_name, uint16_t expected_vertex_count)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    if (!state->initialized) {
+        gx_warn_uninitialized(call_name);
+        return;
+    }
+
+    if (state->drawing) {
+        GCPS3_LOG_WARN("gx", "%s called while a draw is already active; nested begin rejected", call_name);
+        return;
+    }
+
+    state->drawing = 1;
+    gx_reset_triangle_packet(state);
+    state->packet.expected_vertex_count = expected_vertex_count;
+}
+
 static unsigned int gx_trim_incomplete_triangles(Gcps3GXDrawPacket *packet)
 {
     unsigned int trailing_vertex_count;
@@ -36,6 +65,107 @@ static void gx_submit_draw_packet(Gcps3GXState *state)
     gcps3_gx_backend_submit_draw_packet(&state->packet);
     state->drawing = 0;
     gx_reset_triangle_packet(state);
+}
+
+static void gx_validate_expected_vertex_count(const Gcps3GXDrawPacket *packet)
+{
+    if (packet->expected_vertex_count == 0u) {
+        return;
+    }
+
+    if (packet->expected_vertex_count != packet->vertex_count) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "GX_Begin expected %u vertices but packet contains %u complete vertex/vertices",
+            (unsigned int)packet->expected_vertex_count,
+            packet->vertex_count);
+    }
+}
+
+static void gx_position3f32(const char *call_name, float x, float y, float z)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+    Gcps3GXVertex *vertex;
+
+    if (!state->initialized) {
+        gx_warn_uninitialized(call_name);
+        return;
+    }
+
+    if (!state->drawing) {
+        GCPS3_LOG_WARN("gx", "%s called outside GX begin/end", call_name);
+        return;
+    }
+
+    if (state->packet.descriptor.position != GX_ATTR_DIRECT) {
+        GCPS3_LOG_WARN("gx", "%s ignored because position is not enabled as direct", call_name);
+        return;
+    }
+
+    if (state->packet.vertex_count >= GCPS3_GX_MAX_PACKET_VERTICES) {
+        GCPS3_LOG_WARN(
+            "gx",
+            "GX immediate packet capacity %u reached; dropping vertex",
+            (unsigned int)GCPS3_GX_MAX_PACKET_VERTICES);
+        return;
+    }
+
+    vertex = &state->packet.vertices[state->packet.vertex_count];
+    vertex->x = x;
+    vertex->y = y;
+    vertex->z = z;
+    vertex->color = state->current_color;
+    vertex->s = state->current_s;
+    vertex->t = state->current_t;
+    state->packet.vertex_count++;
+}
+
+static void gx_color4u8(const char *call_name, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    if (!state->initialized) {
+        gx_warn_uninitialized(call_name);
+        return;
+    }
+
+    if (!state->drawing) {
+        GCPS3_LOG_WARN("gx", "%s called outside GX begin/end", call_name);
+        return;
+    }
+
+    if (state->packet.descriptor.color0 != GX_ATTR_DIRECT) {
+        GCPS3_LOG_WARN("gx", "%s ignored because color0 is not enabled as direct", call_name);
+        return;
+    }
+
+    state->current_color.r = r;
+    state->current_color.g = g;
+    state->current_color.b = b;
+    state->current_color.a = a;
+}
+
+static void gx_texcoord2f32(const char *call_name, float s, float t)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    if (!state->initialized) {
+        gx_warn_uninitialized(call_name);
+        return;
+    }
+
+    if (!state->drawing) {
+        GCPS3_LOG_WARN("gx", "%s called outside GX begin/end", call_name);
+        return;
+    }
+
+    if (state->packet.descriptor.tex0 != GX_ATTR_DIRECT) {
+        GCPS3_LOG_WARN("gx", "%s ignored because tex0 is not enabled as direct", call_name);
+        return;
+    }
+
+    state->current_s = s;
+    state->current_t = t;
 }
 
 static const char *gx_attr_name(GXAttr attr)
@@ -364,106 +494,22 @@ void GXSetCurrentMtx(uint32_t id)
  */
 void GXBeginTriangles(void)
 {
-    Gcps3GXState *state = gcps3_gx_state();
-
-    if (!state->initialized) {
-        gx_warn_uninitialized("GXBeginTriangles");
-        return;
-    }
-
-    if (state->drawing) {
-        GCPS3_LOG_WARN("gx", "GXBeginTriangles called while a draw is already active; nested begin rejected");
-        return;
-    }
-
-    state->drawing = 1;
-    gx_reset_triangle_packet(state);
+    gx_begin_triangles_with_expected_count("GXBeginTriangles", 0);
 }
 
 void GXPosition3f32(float x, float y, float z)
 {
-    Gcps3GXState *state = gcps3_gx_state();
-    Gcps3GXVertex *vertex;
-
-    if (!state->initialized) {
-        gx_warn_uninitialized("GXPosition3f32");
-        return;
-    }
-
-    if (!state->drawing) {
-        GCPS3_LOG_WARN("gx", "GXPosition3f32 called outside GXBeginTriangles/GXEnd");
-        return;
-    }
-
-    if (state->packet.descriptor.position != GX_ATTR_DIRECT) {
-        GCPS3_LOG_WARN("gx", "GXPosition3f32 ignored because position is not enabled as direct");
-        return;
-    }
-
-    if (state->packet.vertex_count >= GCPS3_GX_MAX_PACKET_VERTICES) {
-        GCPS3_LOG_WARN(
-            "gx",
-            "GX immediate packet capacity %u reached; dropping vertex",
-            (unsigned int)GCPS3_GX_MAX_PACKET_VERTICES);
-        return;
-    }
-
-    vertex = &state->packet.vertices[state->packet.vertex_count];
-    vertex->x = x;
-    vertex->y = y;
-    vertex->z = z;
-    vertex->color = state->current_color;
-    vertex->s = state->current_s;
-    vertex->t = state->current_t;
-    state->packet.vertex_count++;
+    gx_position3f32("GXPosition3f32", x, y, z);
 }
 
 void GXColor4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-    Gcps3GXState *state = gcps3_gx_state();
-
-    if (!state->initialized) {
-        gx_warn_uninitialized("GXColor4u8");
-        return;
-    }
-
-    if (!state->drawing) {
-        GCPS3_LOG_WARN("gx", "GXColor4u8 called outside GXBeginTriangles/GXEnd");
-        return;
-    }
-
-    if (state->packet.descriptor.color0 != GX_ATTR_DIRECT) {
-        GCPS3_LOG_WARN("gx", "GXColor4u8 ignored because color0 is not enabled as direct");
-        return;
-    }
-
-    state->current_color.r = r;
-    state->current_color.g = g;
-    state->current_color.b = b;
-    state->current_color.a = a;
+    gx_color4u8("GXColor4u8", r, g, b, a);
 }
 
 void GXTexCoord2f32(float s, float t)
 {
-    Gcps3GXState *state = gcps3_gx_state();
-
-    if (!state->initialized) {
-        gx_warn_uninitialized("GXTexCoord2f32");
-        return;
-    }
-
-    if (!state->drawing) {
-        GCPS3_LOG_WARN("gx", "GXTexCoord2f32 called outside GXBeginTriangles/GXEnd");
-        return;
-    }
-
-    if (state->packet.descriptor.tex0 != GX_ATTR_DIRECT) {
-        GCPS3_LOG_WARN("gx", "GXTexCoord2f32 ignored because tex0 is not enabled as direct");
-        return;
-    }
-
-    state->current_s = s;
-    state->current_t = t;
+    gx_texcoord2f32("GXTexCoord2f32", s, t);
 }
 
 void GXEnd(void)
@@ -481,6 +527,7 @@ void GXEnd(void)
     }
 
     gx_trim_incomplete_triangles(&state->packet);
+    gx_validate_expected_vertex_count(&state->packet);
 
     if (state->packet.vertex_count == 0u) {
         GCPS3_LOG_WARN("gx", "GXEnd submitted no complete triangles");
@@ -490,4 +537,39 @@ void GXEnd(void)
     }
 
     gx_submit_draw_packet(state);
+}
+
+void GX_Begin(GXPrimitive primitive, GXVtxFmt vtxfmt, uint16_t vertex_count)
+{
+    if (!gx_primitive_is_supported(primitive)) {
+        GCPS3_LOG_WARN("gx", "GX_Begin called with unsupported primitive=%d", (int)primitive);
+        return;
+    }
+
+    if (!gx_vtxfmt_is_supported(vtxfmt)) {
+        GCPS3_LOG_WARN("gx", "GX_Begin called with unsupported vertex format=%d", (int)vtxfmt);
+        return;
+    }
+
+    gx_begin_triangles_with_expected_count("GX_Begin", vertex_count);
+}
+
+void GX_End(void)
+{
+    GXEnd();
+}
+
+void GX_Position3f32(float x, float y, float z)
+{
+    gx_position3f32("GX_Position3f32", x, y, z);
+}
+
+void GX_Color4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    gx_color4u8("GX_Color4u8", r, g, b, a);
+}
+
+void GX_TexCoord2f32(float s, float t)
+{
+    gx_texcoord2f32("GX_TexCoord2f32", s, t);
 }

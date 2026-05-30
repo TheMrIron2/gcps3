@@ -46,6 +46,7 @@ typedef struct Gcps3GXVertex {
 
 typedef struct Gcps3GXDrawPacket {
     Gcps3GXPrimitive primitive;
+    uint16_t expected_vertex_count;
     Gcps3GXVtxDesc descriptor;
     uint32_t current_matrix_id;
     Gcps3GXPosMtx current_matrix;

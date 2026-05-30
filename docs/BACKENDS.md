@@ -1,6 +1,6 @@
 # gcps3 Backends
 
-`gcps3` keeps the GX frontend backend-neutral. Backend code should stay behind the internal backend interface and should not leak platform-specific details into public GX APIs.
+`gcps3` keeps the GX frontend backend-neutral. Backend code should stay behind the internal backend interface and should not leak platform-specific details into public GX APIs. The public GX layer is beginning to expose authentic GX-style compatibility entry points such as `GX_Begin`, while the frontend still lowers them into the same backend-neutral draw packets used by the temporary validation APIs.
 
 ## gxnull
 

@@ -29,6 +29,14 @@ typedef enum GXCompare {
     GX_ALWAYS = 7
 } GXCompare;
 
+typedef enum GXPrimitive {
+    GX_TRIANGLES = 0
+} GXPrimitive;
+
+typedef enum GXVtxFmt {
+    GX_VTXFMT0 = 0
+} GXVtxFmt;
+
 void GXInit(void);
 void GXShutdown(void);
 void GXSetViewport(float x, float y, float width, float height, float near_z, float far_z);
@@ -46,6 +54,11 @@ void GXPosition3f32(float x, float y, float z);
 void GXColor4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void GXTexCoord2f32(float s, float t);
 void GXEnd(void);
+void GX_Begin(GXPrimitive primitive, GXVtxFmt vtxfmt, uint16_t vertex_count);
+void GX_End(void);
+void GX_Position3f32(float x, float y, float z);
+void GX_Color4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void GX_TexCoord2f32(float s, float t);
 
 #ifdef __cplusplus
 }

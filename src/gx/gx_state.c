@@ -33,6 +33,7 @@ void gcps3_gx_copy_pos_mtx(Gcps3GXPosMtx dst, const float src[3][4])
 void gcps3_gx_draw_packet_reset(Gcps3GXDrawPacket *packet, const Gcps3GXState *state, Gcps3GXPrimitive primitive)
 {
     packet->primitive = primitive;
+    packet->expected_vertex_count = 0;
     packet->descriptor = state->descriptor;
     packet->current_matrix_id = state->current_matrix_id;
     gcps3_gx_copy_pos_mtx(

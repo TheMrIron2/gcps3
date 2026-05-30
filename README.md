@@ -14,6 +14,7 @@ The repository currently contains a host-buildable C99 runtime skeleton with:
 - logging and configuration
 - OS, DVD, and PAD stubs
 - a minimal GX-style frontend
+- authentic GX-style immediate-mode compatibility entry points for early samples
 - a null PC graphics backend
 - an optional SDL2/OpenGL PC debug visualizer backend named `gxpc`
 - immediate-mode triangle packet validation
@@ -46,6 +47,8 @@ cmake --build build
 ./build/gx_matrix
 ./build/gx_textured_triangle
 ./build/gx_textured_cube
+./build/gx_compat_triangle
+./build/gx_compat_textured_triangle
 ```
 
 ## Optional gxpc debug visualizer

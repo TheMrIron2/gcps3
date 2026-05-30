@@ -78,3 +78,9 @@ target_link_libraries(gx_textured_triangle PRIVATE gcps3)
 
 add_executable(gx_textured_cube samples/gx_textured_cube/main.c)
 target_link_libraries(gx_textured_cube PRIVATE gcps3)
+
+add_executable(gx_compat_triangle samples/gx_compat_triangle/main.c)
+target_link_libraries(gx_compat_triangle PRIVATE gcps3)
+
+add_executable(gx_compat_textured_triangle samples/gx_compat_textured_triangle/main.c)
+target_link_libraries(gx_compat_textured_triangle PRIVATE gcps3)

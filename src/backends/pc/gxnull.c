@@ -165,9 +165,10 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
 
     GCPS3_LOG_INFO(
         "gxnull",
-        "draw primitive=%s vertex_count=%u desc[position=%s color0=%s tex0=%s] mtx=%u",
+        "draw primitive=%s vertex_count=%u expected_vertex_count=%u desc[position=%s color0=%s tex0=%s] mtx=%u",
         primitive_name(packet->primitive),
         packet->vertex_count,
+        packet->expected_vertex_count,
         attr_type_name(packet->descriptor.position),
         attr_type_name(packet->descriptor.color0),
         attr_type_name(packet->descriptor.tex0),
