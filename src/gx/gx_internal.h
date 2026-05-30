@@ -31,6 +31,11 @@ typedef struct Gcps3GXDepthState {
     int z_update_enable;
 } Gcps3GXDepthState;
 
+typedef struct Gcps3GXArrayBinding {
+    const void *base;
+    uint8_t stride;
+} Gcps3GXArrayBinding;
+
 typedef enum Gcps3GXPrimitive {
     GCPS3_GX_PRIMITIVE_TRIANGLES = 0
 } Gcps3GXPrimitive;
@@ -73,6 +78,8 @@ typedef struct Gcps3GXState {
     float current_t;
     GXViewport viewport;
     Gcps3GXVtxDesc descriptor;
+    Gcps3GXArrayBinding position_array;
+    Gcps3GXArrayBinding color0_array;
     Gcps3GXTextureState texture;
     Gcps3GXDepthState depth;
     uint32_t current_matrix_id;

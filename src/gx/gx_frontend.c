@@ -9,6 +9,8 @@ static void gx_warn_uninitialized(const char *call_name)
     GCPS3_LOG_WARN("gx", "%s called before GXInit", call_name);
 }
 
+static int16_t gx_read_s16_native(const void *ptr);
+
 static void gx_reset_triangle_packet(Gcps3GXState *state)
 {
     gcps3_gx_draw_packet_reset(&state->packet, state, GCPS3_GX_PRIMITIVE_TRIANGLES);
@@ -149,10 +151,22 @@ static void gx_submit_source_vertex(Gcps3GXState *state, const Gcps3GXVertex *ve
     (void)gx_append_packet_vertex(state, vertex);
 }
 
+static void gx_submit_position3f32(Gcps3GXState *state, float x, float y, float z)
+{
+    Gcps3GXVertex vertex;
+
+    vertex.x = x;
+    vertex.y = y;
+    vertex.z = z;
+    vertex.color = state->current_color;
+    vertex.s = state->current_s;
+    vertex.t = state->current_t;
+    gx_submit_source_vertex(state, &vertex);
+}
+
 static void gx_position3f32(const char *call_name, float x, float y, float z)
 {
     Gcps3GXState *state = gcps3_gx_state();
-    Gcps3GXVertex vertex;
 
     if (!state->initialized) {
         gx_warn_uninitialized(call_name);
@@ -169,13 +183,7 @@ static void gx_position3f32(const char *call_name, float x, float y, float z)
         return;
     }
 
-    vertex.x = x;
-    vertex.y = y;
-    vertex.z = z;
-    vertex.color = state->current_color;
-    vertex.s = state->current_s;
-    vertex.t = state->current_t;
-    gx_submit_source_vertex(state, &vertex);
+    gx_submit_position3f32(state, x, y, z);
 }
 
 static void gx_color4u8(const char *call_name, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
@@ -201,6 +209,77 @@ static void gx_color4u8(const char *call_name, uint8_t r, uint8_t g, uint8_t b, 
     state->current_color.g = g;
     state->current_color.b = b;
     state->current_color.a = a;
+}
+
+static void gx_position1x8(const char *call_name, uint8_t index)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+    const uint8_t *base;
+    const uint8_t *entry;
+    int16_t x;
+    int16_t y;
+    int16_t z;
+
+    if (!state->initialized) {
+        gx_warn_uninitialized(call_name);
+        return;
+    }
+
+    if (!state->drawing) {
+        GCPS3_LOG_WARN("gx", "%s called outside GX begin/end", call_name);
+        return;
+    }
+
+    if (state->packet.descriptor.position != GX_ATTR_INDEX8) {
+        GCPS3_LOG_WARN("gx", "%s ignored because position is not enabled as index8", call_name);
+        return;
+    }
+
+    if (!state->position_array.base || state->position_array.stride == 0u) {
+        GCPS3_LOG_WARN("gx", "%s ignored because no valid position array is bound", call_name);
+        return;
+    }
+
+    base = (const uint8_t *)state->position_array.base;
+    entry = base + ((unsigned int)index * (unsigned int)state->position_array.stride);
+    x = gx_read_s16_native(entry + 0u);
+    y = gx_read_s16_native(entry + 2u);
+    z = gx_read_s16_native(entry + 4u);
+    gx_submit_position3f32(state, (float)x, (float)y, (float)z);
+}
+
+static void gx_color1x8(const char *call_name, uint8_t index)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+    const uint8_t *base;
+    const uint8_t *entry;
+
+    if (!state->initialized) {
+        gx_warn_uninitialized(call_name);
+        return;
+    }
+
+    if (!state->drawing) {
+        GCPS3_LOG_WARN("gx", "%s called outside GX begin/end", call_name);
+        return;
+    }
+
+    if (state->packet.descriptor.color0 != GX_ATTR_INDEX8) {
+        GCPS3_LOG_WARN("gx", "%s ignored because color0 is not enabled as index8", call_name);
+        return;
+    }
+
+    if (!state->color0_array.base || state->color0_array.stride == 0u) {
+        GCPS3_LOG_WARN("gx", "%s ignored because no valid color0 array is bound", call_name);
+        return;
+    }
+
+    base = (const uint8_t *)state->color0_array.base;
+    entry = base + ((unsigned int)index * (unsigned int)state->color0_array.stride);
+    state->current_color.r = entry[0];
+    state->current_color.g = entry[1];
+    state->current_color.b = entry[2];
+    state->current_color.a = entry[3];
 }
 
 static void gx_texcoord2f32(const char *call_name, float s, float t)
@@ -247,9 +326,37 @@ static const char *gx_attr_type_name(GXAttrType type)
         return "none";
     case GX_ATTR_DIRECT:
         return "direct";
+    case GX_ATTR_INDEX8:
+        return "index8";
     default:
         return "unknown";
     }
+}
+
+static int gx_attr_type_supported_for_attr(GXAttr attr, GXAttrType type)
+{
+    if (type == GX_ATTR_NONE || type == GX_ATTR_DIRECT) {
+        return 1;
+    }
+
+    if (type == GX_ATTR_INDEX8 && (attr == GX_ATTR_POSITION || attr == GX_ATTR_COLOR0)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int16_t gx_read_s16_native(const void *ptr)
+{
+    const uint8_t *bytes = (const uint8_t *)ptr;
+    union {
+        int16_t value;
+        uint8_t bytes[2];
+    } reader;
+
+    reader.bytes[0] = bytes[0];
+    reader.bytes[1] = bytes[1];
+    return reader.value;
 }
 
 static int gx_compare_is_valid(GXCompare func)
@@ -432,7 +539,7 @@ void GXSetVtxDesc(GXAttr attr, GXAttrType type)
     Gcps3GXState *state = gcps3_gx_state();
     GXAttrType *target = 0;
 
-    if (type != GX_ATTR_NONE && type != GX_ATTR_DIRECT) {
+    if (!gx_attr_type_supported_for_attr(attr, type)) {
         GCPS3_LOG_WARN("gx", "GXSetVtxDesc attr=%s has unsupported type=%d", gx_attr_name(attr), (int)type);
         return;
     }
@@ -465,6 +572,39 @@ void GXSetVtxDesc(GXAttr attr, GXAttrType type)
     }
 
     GCPS3_LOG_INFO("gx", "vertex descriptor %s=%s", gx_attr_name(attr), gx_attr_type_name(type));
+}
+
+void GX_SetArray(GXAttr attr, const void *base, uint8_t stride)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+    Gcps3GXArrayBinding *target = 0;
+
+    if (!base || stride == 0u) {
+        GCPS3_LOG_WARN("gx", "GX_SetArray attr=%s called with invalid base or stride", gx_attr_name(attr));
+        return;
+    }
+
+    switch (attr) {
+    case GX_ATTR_POSITION:
+        target = &state->position_array;
+        break;
+    case GX_ATTR_COLOR0:
+        target = &state->color0_array;
+        break;
+    default:
+        GCPS3_LOG_WARN("gx", "GX_SetArray called with unsupported attr=%d", (int)attr);
+        return;
+    }
+
+    target->base = base;
+    target->stride = stride;
+
+    if (!state->initialized) {
+        GCPS3_LOG_WARN("gx", "GX_SetArray called before GXInit; state recorded only");
+        return;
+    }
+
+    GCPS3_LOG_INFO("gx", "array %s base=%p stride=%u", gx_attr_name(attr), base, (unsigned int)stride);
 }
 
 void GXInitTexObj(GXTexObj *obj, const void *rgba8_pixels, uint32_t width, uint32_t height)
@@ -639,4 +779,14 @@ void GX_Color4u8(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 void GX_TexCoord2f32(float s, float t)
 {
     gx_texcoord2f32("GX_TexCoord2f32", s, t);
+}
+
+void GX_Position1x8(uint8_t index)
+{
+    gx_position1x8("GX_Position1x8", index);
+}
+
+void GX_Color1x8(uint8_t index)
+{
+    gx_color1x8("GX_Color1x8", index);
 }

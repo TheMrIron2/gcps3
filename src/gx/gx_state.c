@@ -77,6 +77,10 @@ void gcps3_gx_state_reset(void)
     s_gx_state.descriptor.position = GX_ATTR_DIRECT;
     s_gx_state.descriptor.color0 = GX_ATTR_DIRECT;
     s_gx_state.descriptor.tex0 = GX_ATTR_NONE;
+    s_gx_state.position_array.base = 0;
+    s_gx_state.position_array.stride = 0;
+    s_gx_state.color0_array.base = 0;
+    s_gx_state.color0_array.stride = 0;
     s_gx_state.texture.bound = 0;
     s_gx_state.texture.rgba8_pixels = 0;
     s_gx_state.texture.width = 0;

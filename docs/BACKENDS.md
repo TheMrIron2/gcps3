@@ -1,6 +1,6 @@
 # gcps3 Backends
 
-`gcps3` keeps the GX frontend backend-neutral. Backend code should stay behind the internal backend interface and should not leak platform-specific details into public GX APIs. The public GX layer is beginning to expose authentic GX-style compatibility entry points such as `GX_Begin`, while the frontend still lowers them into the same backend-neutral draw packets used by the temporary validation APIs. Compatibility quads are decomposed in the frontend so backends continue to receive triangle packets.
+`gcps3` keeps the GX frontend backend-neutral. Backend code should stay behind the internal backend interface and should not leak platform-specific details into public GX APIs. The public GX layer is beginning to expose authentic GX-style compatibility entry points such as `GX_Begin`, while the frontend still lowers them into the same backend-neutral draw packets used by the temporary validation APIs. Compatibility quads are decomposed in the frontend so backends continue to receive triangle packets. Indexed array submission is currently a minimal fixed-format path for position `s16[3]` and color `RGBA8` data only.
 
 ## gxnull
 

@@ -31,6 +31,8 @@ static const char *attr_type_name(GXAttrType type)
         return "none";
     case GX_ATTR_DIRECT:
         return "direct";
+    case GX_ATTR_INDEX8:
+        return "index8";
     default:
         return "unknown";
     }

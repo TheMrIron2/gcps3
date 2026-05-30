@@ -90,3 +90,6 @@ target_link_libraries(gx_compat_quad PRIVATE gcps3)
 
 add_executable(gx_compat_textured_quad samples/gx_compat_textured_quad/main.c)
 target_link_libraries(gx_compat_textured_quad PRIVATE gcps3)
+
+add_executable(gx_compat_indexed_quad samples/gx_compat_indexed_quad/main.c)
+target_link_libraries(gx_compat_indexed_quad PRIVATE gcps3)
