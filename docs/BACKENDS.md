@@ -17,7 +17,7 @@ cmake --build build
 
 gxpc is an optional SDL2/OpenGL development visualizer for quick local checks. It can open a window and draw the current immediate-mode triangle sample, but it is not the final renderer architecture.
 
-For frontend validation, gxpc currently applies the captured 3x4 position matrix from each draw packet to submitted vertices before drawing. It can also upload the current RGBA8 texture object for textured immediate-mode triangle and cube samples. These are visual debugging aids only; they are not the final matrix, material, texture, or shader architecture.
+For frontend validation, gxpc currently applies the captured 3x4 position matrix from each draw packet to submitted vertices before drawing. It can also upload the current RGBA8 texture object and consume minimal depth-test state for textured immediate-mode triangle and cube samples. These are visual debugging aids only; they are not the final matrix, material, texture, depth, or shader architecture.
 
 ## Coordinate convention
 

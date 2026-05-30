@@ -64,6 +64,47 @@ static const char *gx_attr_type_name(GXAttrType type)
     }
 }
 
+static int gx_compare_is_valid(GXCompare func)
+{
+    switch (func) {
+    case GX_NEVER:
+    case GX_LESS:
+    case GX_EQUAL:
+    case GX_LEQUAL:
+    case GX_GREATER:
+    case GX_NEQUAL:
+    case GX_GEQUAL:
+    case GX_ALWAYS:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+static const char *gx_compare_name(GXCompare func)
+{
+    switch (func) {
+    case GX_NEVER:
+        return "never";
+    case GX_LESS:
+        return "less";
+    case GX_EQUAL:
+        return "equal";
+    case GX_LEQUAL:
+        return "lequal";
+    case GX_GREATER:
+        return "greater";
+    case GX_NEQUAL:
+        return "nequal";
+    case GX_GEQUAL:
+        return "gequal";
+    case GX_ALWAYS:
+        return "always";
+    default:
+        return "unknown";
+    }
+}
+
 void GXInit(void)
 {
     Gcps3GXState *state = gcps3_gx_state();
@@ -144,6 +185,37 @@ void GXClear(void)
     }
 
     gcps3_gx_backend_clear(state);
+}
+
+void GXSetZMode(int enable, GXCompare func, int update_enable)
+{
+    Gcps3GXState *state = gcps3_gx_state();
+
+    if (!gx_compare_is_valid(func)) {
+        GCPS3_LOG_WARN("gx", "GXSetZMode called with unsupported compare func=%d", (int)func);
+        return;
+    }
+
+    state->depth.z_enable = enable ? 1 : 0;
+    state->depth.z_func = func;
+    state->depth.z_update_enable = update_enable ? 1 : 0;
+
+    if (!state->initialized) {
+        GCPS3_LOG_WARN("gx", "GXSetZMode called before GXInit; state recorded only");
+        return;
+    }
+
+    if (state->drawing) {
+        GCPS3_LOG_WARN("gx", "GXSetZMode called during an active immediate draw; depth changes apply to the next packet");
+        return;
+    }
+
+    GCPS3_LOG_INFO(
+        "gx",
+        "z mode enable=%d func=%s update=%d",
+        state->depth.z_enable,
+        gx_compare_name(func),
+        state->depth.z_update_enable);
 }
 
 void GXClearVtxDesc(void)

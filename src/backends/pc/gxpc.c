@@ -45,6 +45,42 @@ static void apply_clear_color(GXColor color)
         color_channel(color.a));
 }
 
+static GLenum depth_func(GXCompare func)
+{
+    switch (func) {
+    case GX_NEVER:
+        return GL_NEVER;
+    case GX_LESS:
+        return GL_LESS;
+    case GX_EQUAL:
+        return GL_EQUAL;
+    case GX_LEQUAL:
+        return GL_LEQUAL;
+    case GX_GREATER:
+        return GL_GREATER;
+    case GX_NEQUAL:
+        return GL_NOTEQUAL;
+    case GX_GEQUAL:
+        return GL_GEQUAL;
+    case GX_ALWAYS:
+        return GL_ALWAYS;
+    default:
+        return GL_LEQUAL;
+    }
+}
+
+static void apply_depth_state(const Gcps3GXDrawPacket *packet)
+{
+    if (packet->depth.z_enable) {
+        glEnable(GL_DEPTH_TEST);
+    } else {
+        glDisable(GL_DEPTH_TEST);
+    }
+
+    glDepthFunc(depth_func(packet->depth.z_func));
+    glDepthMask(packet->depth.z_update_enable ? GL_TRUE : GL_FALSE);
+}
+
 static int should_use_texture(const Gcps3GXDrawPacket *packet)
 {
     return packet->descriptor.tex0 == GX_ATTR_DIRECT && packet->texture.bound && packet->texture.rgba8_pixels;
@@ -109,6 +145,7 @@ static int ensure_window(const Gcps3GXState *state)
 
     s_sdl_initialized = 1;
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 
@@ -136,6 +173,7 @@ static int ensure_window(const Gcps3GXState *state)
     SDL_GL_SetSwapInterval(1);
     apply_viewport(&state->viewport);
     apply_clear_color(state->clear_color);
+    glClearDepth(1.0);
 
     GCPS3_LOG_INFO("gxpc", "debug visualizer window created (%dx%d)", width, height);
     return 1;
@@ -202,7 +240,8 @@ void gcps3_gx_backend_clear(const Gcps3GXState *state)
     }
 
     apply_clear_color(s_clear_color);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glDepthMask(GL_TRUE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     SDL_GL_SwapWindow(s_window);
     pump_events();
 }
@@ -219,7 +258,9 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
     GCPS3_LOG_INFO("gxpc", "drawing triangle packet with %u vertices", packet->vertex_count);
 
     apply_clear_color(s_clear_color);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glDepthMask(GL_TRUE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    apply_depth_state(packet);
     use_texture = upload_texture_for_draw(packet);
 
     if (use_texture) {
@@ -250,6 +291,7 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
     }
     glEnd();
     glDisable(GL_TEXTURE_2D);
+    glDepthMask(GL_TRUE);
 
     SDL_GL_SwapWindow(s_window);
     pump_events();

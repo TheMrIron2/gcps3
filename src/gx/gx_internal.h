@@ -25,6 +25,12 @@ typedef struct Gcps3GXTextureState {
     uint32_t height;
 } Gcps3GXTextureState;
 
+typedef struct Gcps3GXDepthState {
+    int z_enable;
+    GXCompare z_func;
+    int z_update_enable;
+} Gcps3GXDepthState;
+
 typedef enum Gcps3GXPrimitive {
     GCPS3_GX_PRIMITIVE_TRIANGLES = 0
 } Gcps3GXPrimitive;
@@ -44,6 +50,7 @@ typedef struct Gcps3GXDrawPacket {
     uint32_t current_matrix_id;
     Gcps3GXPosMtx current_matrix;
     Gcps3GXTextureState texture;
+    Gcps3GXDepthState depth;
     unsigned int vertex_count;
     Gcps3GXVertex vertices[GCPS3_GX_MAX_PACKET_VERTICES];
 } Gcps3GXDrawPacket;
@@ -58,6 +65,7 @@ typedef struct Gcps3GXState {
     GXViewport viewport;
     Gcps3GXVtxDesc descriptor;
     Gcps3GXTextureState texture;
+    Gcps3GXDepthState depth;
     uint32_t current_matrix_id;
     Gcps3GXPosMtx position_matrices[GCPS3_GX_MAX_POS_MATRICES];
     Gcps3GXDrawPacket packet;

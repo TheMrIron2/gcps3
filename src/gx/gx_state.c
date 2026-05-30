@@ -39,6 +39,7 @@ void gcps3_gx_draw_packet_reset(Gcps3GXDrawPacket *packet, const Gcps3GXState *s
         packet->current_matrix,
         (const float (*)[4])state->position_matrices[state->current_matrix_id]);
     packet->texture = state->texture;
+    packet->depth = state->depth;
     packet->vertex_count = 0;
 }
 
@@ -76,6 +77,9 @@ void gcps3_gx_state_reset(void)
     s_gx_state.texture.rgba8_pixels = 0;
     s_gx_state.texture.width = 0;
     s_gx_state.texture.height = 0;
+    s_gx_state.depth.z_enable = 0;
+    s_gx_state.depth.z_func = GX_LEQUAL;
+    s_gx_state.depth.z_update_enable = 0;
     s_gx_state.current_matrix_id = 0;
     for (i = 0; i < GCPS3_GX_MAX_POS_MATRICES; i++) {
         set_identity_pos_mtx(s_gx_state.position_matrices[i]);

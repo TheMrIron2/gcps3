@@ -97,6 +97,7 @@ int main(void)
 
     GXLoadPosMtxImm(model, 1);
     GXSetCurrentMtx(1);
+    GXSetZMode(1, GX_LEQUAL, 1);
 
     GXBeginTriangles();
     emit_face(b0, b1, b2, b3);

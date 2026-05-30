@@ -20,6 +20,7 @@ The repository currently contains a host-buildable C99 runtime skeleton with:
 - minimal vertex descriptor state
 - minimal position matrix state
 - minimal RGBA8 texture-object state for immediate-mode triangle validation
+- minimal depth state capture and gxpc depth-test validation
 
 No final rendering backend, PS3 backend, RSX backend, SPE job system, full texture pipeline, TEV support, or commercial game support exists yet.
 

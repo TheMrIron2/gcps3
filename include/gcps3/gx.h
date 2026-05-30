@@ -18,11 +18,23 @@ typedef enum GXAttrType {
     GX_ATTR_DIRECT = 1
 } GXAttrType;
 
+typedef enum GXCompare {
+    GX_NEVER = 0,
+    GX_LESS = 1,
+    GX_EQUAL = 2,
+    GX_LEQUAL = 3,
+    GX_GREATER = 4,
+    GX_NEQUAL = 5,
+    GX_GEQUAL = 6,
+    GX_ALWAYS = 7
+} GXCompare;
+
 void GXInit(void);
 void GXShutdown(void);
 void GXSetViewport(float x, float y, float width, float height, float near_z, float far_z);
 void GXSetClearColor(GXColor color);
 void GXClear(void);
+void GXSetZMode(int enable, GXCompare func, int update_enable);
 void GXClearVtxDesc(void);
 void GXSetVtxDesc(GXAttr attr, GXAttrType type);
 void GXInitTexObj(GXTexObj *obj, const void *rgba8_pixels, uint32_t width, uint32_t height);

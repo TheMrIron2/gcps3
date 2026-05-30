@@ -24,6 +24,40 @@ static const char *attr_type_name(GXAttrType type)
     }
 }
 
+static const char *compare_name(GXCompare func)
+{
+    switch (func) {
+    case GX_NEVER:
+        return "never";
+    case GX_LESS:
+        return "less";
+    case GX_EQUAL:
+        return "equal";
+    case GX_LEQUAL:
+        return "lequal";
+    case GX_GREATER:
+        return "greater";
+    case GX_NEQUAL:
+        return "nequal";
+    case GX_GEQUAL:
+        return "gequal";
+    case GX_ALWAYS:
+        return "always";
+    default:
+        return "unknown";
+    }
+}
+
+static void log_depth(const Gcps3GXDrawPacket *packet)
+{
+    GCPS3_LOG_INFO(
+        "gxnull",
+        "depth enable=%d func=%s update=%d",
+        packet->depth.z_enable,
+        compare_name(packet->depth.z_func),
+        packet->depth.z_update_enable);
+}
+
 static void log_texture(const Gcps3GXDrawPacket *packet)
 {
     if (!packet->texture.bound) {
@@ -140,6 +174,7 @@ void gcps3_gx_backend_submit_draw_packet(const Gcps3GXDrawPacket *packet)
         (unsigned int)packet->current_matrix_id);
 
     log_matrix(packet);
+    log_depth(packet);
     log_texture(packet);
 
     for (i = 0; i < packet->vertex_count; i++) {
